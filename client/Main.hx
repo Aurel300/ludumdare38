@@ -1,5 +1,6 @@
 import sk.thenet.FM;
 import sk.thenet.app.*;
+import sk.thenet.app.Keyboard.Key;
 import sk.thenet.bmp.*;
 import sk.thenet.geom.*;
 import sk.thenet.plat.Platform;
@@ -17,6 +18,7 @@ class Main extends Application {
     super([
          Framerate(60)
         ,Surface(400, 225, 1)
+        ,Keyboard
         ,Mouse
       ]);
     
@@ -30,7 +32,7 @@ class STest extends State {
   
   public function new(app:Application){
     super("test", app);
-    ico = Geodesic.generateIcosahedron();
+    ico = Geodesic.generateIcosahedron().subdivide(4);
   }
   
   override public function to():Void {
@@ -39,5 +41,13 @@ class STest extends State {
   override public function tick():Void {
     app.bitmap.fill(0xFF333333);
     ico.render(app.bitmap, Platform.mouse.x / 100);
+  }
+  
+  override public function keyUp(key:Key):Void {
+    switch (key){
+      case ArrowLeft: ico.cycleShow(-1);
+      case ArrowRight: ico.cycleShow(1);
+      case _:
+    }
   }
 }

@@ -108,6 +108,7 @@ class Geodesic {
   public var lines (default, null):Array<{f:Int, t:Int}>;
   public var tiles (default, null):Array<Tile>;
   private var show:Tile;
+  private var showi:Int;
   
   public function new(
     points:Array<Point3DF>, lines:Array<{f:Int, t:Int}>, tiles:Array<Tile>
@@ -116,7 +117,103 @@ class Geodesic {
     this.lines  = lines;
     this.tiles  = tiles;
     
-    show = this.tiles[0];
+    showi = 0;
+    show = this.tiles[showi];
+  }
+  
+  public function subdivide(n:Int):Geodesic {
+    var subpoints:Array<Point3DF> = [];
+    var subtiles  = [];
+    
+    var linesUsed:Array<{f:Int, t:Int, p:Array<Int>}> = [];
+    
+    inline function lineCheck(a:Int, b:Int):Int {
+      var ret:Int = -1;
+      for (li in 0...linesUsed.length){
+        if ((linesUsed[li].f == a && linesUsed[li].t == b)
+            || (linesUsed[li].t == a && linesUsed[li].f == b)){
+          ret = li;
+          break;
+        }
+      }
+      if (ret == -1){
+        ret = linesUsed.length;
+        linesUsed.push({f: a, t: b, p: []});
+      }
+      return ret;
+    }
+    
+    inline function closest(point:Point3DF):Int {
+      var ret = -1;
+      for (pi in 0...subpoints.length){
+        if (subpoints[pi].distance(point) < .05){
+          ret = pi;
+          break;
+        }
+      }
+      if (ret == -1){
+        ret = subpoints.length;
+        subpoints.push(point);
+      }
+      return ret;
+    }
+    
+    for (t in tiles){
+      var po = points[t.points[0]];
+      var px = points[t.points[1]].subtract(po).scale(1 / n);
+      var py = points[t.points[2]].subtract(po).scale(1 / n);
+      
+      /*
+      var ll = linesUsed.length;
+      
+      var lxi  = lineCheck(t.points[0], t.points[1]);
+      var lyi  = lineCheck(t.points[0], t.points[2]);
+      var lxyi = lineCheck(t.points[1], t.points[2]);
+      
+      var lx  = lxi  >= ll;
+      var ly  = lyi  >= ll;
+      var lxy = lxyi >= ll;
+      */
+      
+      var ppoints = [];
+      var ptiles = [];
+      
+      for (y in 0...n + 1) for (x in 0...n + 1){
+        if (x + y > n){
+          ppoints.push(-1);
+        } else {
+          var point = po.add(px.scale(x)).add(py.scale(y)).unit();
+          //.scale(.95 + FM.prng.nextFloat(.3));
+          ppoints.push(closest(point));
+        }
+        
+        if ((x == 0 || y == 0) || (x + y > n + 1)){
+          continue;
+        }
+        var lq = new Tile([], [
+             ppoints[(x - 1) + (y - 1) * (n + 1)]
+            ,ppoints[(x    ) + (y - 1) * (n + 1)]
+            ,ppoints[(x - 1) + (y    ) * (n + 1)]
+          ]);
+        subtiles.push(lq);
+        if (x + y < n + 1){
+          var uq = new Tile([lq], [
+               ppoints[(x    ) + (y - 1) * (n + 1)]
+              ,ppoints[(x    ) + (y    ) * (n + 1)]
+              ,ppoints[(x - 1) + (y    ) * (n + 1)]
+            ]);
+          subtiles.push(uq);
+          lq.adjacent.push(uq);
+        }
+      }
+    }
+    return new Geodesic(subpoints, [], subtiles);
+  }
+  
+  public function cycleShow(i:Int):Void {
+    showi += i;
+    showi = (showi + tiles.length) % tiles.length;
+    show = tiles[showi];
   }
   
   public function render(bmp:Bitmap, angle:Float):Void {
@@ -138,31 +235,40 @@ class Geodesic {
       ));
     var rpoints = points.map(q.rotate);
     
-    inline function project(p:Point3DF):Point2DI {
+    inline function project(p:Point3DF, ?ox:Int = 0, ?oy:Int = 0):Point2DI {
       return new Point2DI(
-           FM.floor(p.x * 70 + Main.HWIDTH)
-          ,FM.floor(p.y * 70 + Main.HHEIGHT)
+           FM.floor(p.x * 140 + Main.HWIDTH + ox)
+          ,FM.floor(p.y * 130 + Main.HHEIGHT + 70 + oy)
         );
     }
+    /*
     inline function projectF(p:Point3DF):Point2DF {
       return new Point2DF(
            p.x * 30 + Main.HWIDTH
           ,p.y * 30 + Main.HHEIGHT
         );
-    }
+    }*/
     
-    show = (FM.prng.nextMod(10) > 8 ? FM.prng.nextElement(tiles) : show);
-    for (n in show.adjacent){
-      for (j in 0...3){
-        Bresenham.getCurve(
-            project(rpoints[n.points[j]]), project(rpoints[n.points[(j + 1) % 3]])
-          ).apply(bmp, 0xFF0000AA);
+    //show = (FM.prng.nextMod(10) > 8 ? FM.prng.nextElement(tiles) : show);
+    for (show in tiles){
+      if (   rpoints[show.points[0]].z < 0
+          && rpoints[show.points[1]].z < 0
+          && rpoints[show.points[2]].z < 0){
+        continue;
       }
-    }
-    for (i in 0...3){
-      Bresenham.getCurve(
-          project(rpoints[show.points[i]]), project(rpoints[show.points[(i + 1) % 3]])
-        ).apply(bmp, 0xFF00AA00);
+      //show = FM.prng.nextElement(tiles);
+      for (n in show.adjacent){
+        for (j in 0...3){
+          Bresenham.getCurve(
+              project(rpoints[n.points[j]], 1, 1), project(rpoints[n.points[(j + 1) % 3]], 1, 1)
+            ).apply(bmp, 0xFF0000AA, false);
+        }
+      }
+      for (i in 0...3){
+        Bresenham.getCurve(
+            project(rpoints[show.points[i]]), project(rpoints[show.points[(i + 1) % 3]])
+          ).apply(bmp, 0xFF00AA00, false);
+      }
     }
     
     /*
@@ -177,8 +283,11 @@ class Geodesic {
     */
     
     for (p in rpoints){
+      if (p.z < 0){
+        continue;
+      }
       var pp = project(p);
-      bmp.set(pp.x, pp.y, 0xFF00FF00);
+      bmp.fillRectAlpha(pp.x, pp.y, 3, 3, 0x55FF0000);
     }
   }
 }
