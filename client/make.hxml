@@ -1,4 +1,5 @@
 --macro addClassPath('/DevProjects/Libs/plustd/package/src')
+--macro addClassPath('/DevProjects/Libs/plustd/assets/thenet-preloader/lib')
 --macro addClassPath('/DevProjects/LD48/game/LD 38/repo/common')
 -dce full
 -D analyzer

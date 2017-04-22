@@ -212,6 +212,7 @@ class Geodesic {
   private var rpoints:Vector<GeoPoint>; // rotated points
   //private var rpVisible:Int = 0;
   private var ppoints:Vector<Point2DI>; // projected points
+  private var upoints:Vector<Point2DI>; // projected points, underground
   private var ptiles:Vector<Tile>; // rotated and projected tiles
   private var ptVisible:Int = 0;
   
@@ -223,6 +224,9 @@ class Geodesic {
     for (p in points){
       if (p.tiles.length == 5){
         pents[pi] = p;
+        for (t in p.tiles){
+          t.pent = true;
+        }
       }
     }
     for (t in tiles){
@@ -230,6 +234,7 @@ class Geodesic {
     }
     rpoints = new Vector(points.length);
     ppoints = new Vector(points.length);
+    upoints = new Vector(points.length);
     ptiles = new Vector(tiles.length);
     height = new Vector(points.length);
     for (i in 0...height.length){
@@ -243,10 +248,10 @@ class Geodesic {
   private var ph:Int = 0;
   
   public function rotate(q:Quaternion, scale:Float):Void {
-    inline function project(p:Point3DF, ?ox:Int = 0, ?oy:Int = 0):Point2DI {
+    inline function project(p:Point3DF, scale:Float):Point2DI {
       return new Point2DI(
-           FM.floor(p.x * scale + Main.HWIDTH + ox)
-          ,FM.floor(p.y * scale * .93 + Main.HHEIGHT + 70 + oy)
+           FM.floor(p.x * scale + Main.HWIDTH)
+          ,FM.floor(p.y * scale * .93 + Main.HHEIGHT + 70)
         );
     }
     
@@ -260,12 +265,13 @@ class Geodesic {
       rpVisible++;
     }
     
-    ph++;
+    //ph++;
     ph %= 120;
     
     var ppVisible = 0;
     for (p in rpoints){
-      ppoints[ppVisible] = project(p);
+      ppoints[ppVisible] = project(p, scale);
+      upoints[ppVisible] = project(p, (scale - height[ppVisible] * 100) * .96);
       ppVisible++;
     }
     
@@ -278,16 +284,23 @@ class Geodesic {
     for (t in tiles){
       if (rpoints[t.points[0]].z < -.2){
         t.visible = false;
-      } else if (rpoints[t.points[0]].z > .2){
-        t.visible = true;
       } else if (ppoints[t.points[0]].y >= Main.HEIGHT
           && ppoints[t.points[1]].y >= Main.HEIGHT
           && ppoints[t.points[2]].y >= Main.HEIGHT){
         t.visible = false;
       } else {
-        t.visible = triangleArea(
+        var area = triangleArea(
             ppoints[t.points[0]], ppoints[t.points[1]], ppoints[t.points[2]]
-          ) > 0;
+          );
+        t.visible = area > 0;
+        t.colour = FM.minI(
+             Palette.patterns.length - 1
+            ,FM.minI(Palette.ALPHA - 1, FM.floor((area * 4 / scale)) + (t.pent ? 5 : 0))
+            + FM.maxI(0, 3 - FM.floor((area * 1.3 / scale))) * Palette.ALPHA
+          );
+        //trace(t.colour);
+        //t.colour = (FM.minI(255, FM.floor((area * 20 / scale))) << 24) | 0x8899AA;
+        //t.ucolour = (FM.minI(255, FM.floor((area * 10 / scale))) << 24) | 0xBBCCDD;
       }
       if (t.visible){
         /*
@@ -348,10 +361,12 @@ class Geodesic {
       var ly:Int = -1;
       var txmin:Int = Main.WIDTH - 1;
       var txmax:Int = 0;
+      var c = tile.colour;
       
       inline function renderScan():Void {
         if (txmax >= txmin){
-          bmp.fillRect(txmin, ly, txmax - txmin + 2, 1, tile.colour);
+          bmp.setFillPattern(Palette.patterns[c]);
+          bmp.fillRectPattern(txmin, ly, txmax - txmin, 1);
         }
         txmin = Main.WIDTH - 1;
         txmax = 0;
@@ -362,34 +377,42 @@ class Geodesic {
           ,ppoints[tile.points[1]]
           ,ppoints[tile.points[2]]
         )){
-        
         if (p.y != ly && ly != -1){
           renderScan();
         }
-        
-          /*
-        if (ymin > p.y) ymin = p.y;
-        if (ymax < p.y) ymax = p.y;
-          */
-        if (txmin > p.x){
-          bmp.set(p.x, p.y, 0xFFFFFFFF);
-          txmin = p.x;
-          //if (xmin > p.x) xmin = p.x;
-        }
-        if (txmax < p.x){
-          txmax = p.x;
-          //if (xmax < p.x) xmax = p.x;
-        }
+        if (txmin > p.x) txmin = p.x;
+        //if (xmin > p.x) xmin = p.x;
+        if (txmax < p.x) txmax = p.x;
+        //if (xmax < p.x) xmax = p.x;
         /*if (tymin > p.y) tymin = p.y;
         if (tymax < p.y) tymax = p.y;*/
-        /*if (renbuf[p.y * RB_WIDTH + RB_XMIN] > p.x) renbuf[p.y * RB_WIDTH + RB_XMIN] = p.x;
-        if (renbuf[p.y * RB_WIDTH + RB_XMAX] < p.x) renbuf[p.y * RB_WIDTH + RB_XMAX] = p.x;*/
-        
         ly = p.y;
       }
       if (ly != -1){
         renderScan();
       }
+      
+      /*
+      c = tile.ucolour;
+      for (p in new TopDownBresenhams(
+           upoints[tile.points[0]]
+          ,upoints[tile.points[1]]
+          ,upoints[tile.points[2]]
+        )){
+        if (p.y != ly && ly != -1){
+          renderScan();
+        }
+        if (txmin > p.x) txmin = p.x;
+        //if (xmin > p.x) xmin = p.x;
+        if (txmax < p.x) txmax = p.x;
+        //if (xmax < p.x) xmax = p.x;
+        ly = p.y;
+      }
+      if (ly != -1){
+        renderScan();
+      }
+      */
+      
       /*
       for (i in 0...3){
         var ly:Int = -1;

@@ -12,11 +12,11 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
 
 ## Features / TODO ##
 
- - [ ] GLSL / canvas ???
+ - [x] canvas
  - [ ] planet
    - [x] tile grid
    - [ ] interaction
-   - [ ] terrain
+   - [x] terrain
    - [ ] layers
    - [ ] water
    - [ ] sprites + deformation
