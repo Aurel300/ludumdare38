@@ -1,13 +1,17 @@
 package common;
 
+import sk.thenet.bmp.Colour;
 import sk.thenet.geom.Point3DF;
 
 class Tile {
   public var adjacent(default, null):Array<Tile>;
   public var points  (default, null):Array<Int>;
   
-  public function new(adjacent:Array<Tile>, points:Array<Int>){
-    this.adjacent = adjacent;
+  public var colour:Colour;
+  public var visible:Bool;
+  
+  public function new(points:Array<Int>){
+    this.adjacent = [];
     this.points   = points;
   }
 }

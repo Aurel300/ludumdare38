@@ -8,7 +8,7 @@ import sk.thenet.plat.Platform;
 import sk.thenet.stream.bmp.*;
 
 class Geodesic {
-  public static function generateIcosahedron():Geodesic {
+  public static function generateIcosahedron(n:Int):Geodesic {
     var phi = 1.618;
     var points = [
          [phi, 1, 0]
@@ -86,9 +86,7 @@ class Geodesic {
       tilePush([l.f, l.t, tn[1]]);
     }
     
-    var tiles = [ for (t in tilesP){
-        new Tile([], t);
-      } ];
+    var tiles = [ for (t in tilesP) new Tile(t) ];
     
     for (ti in 0...tilesP.length){
       for (oi in 0...tilesP.length){
@@ -101,28 +99,7 @@ class Geodesic {
       }
     }
     
-    return new Geodesic(points, lines, tiles);
-  }
-  
-  public var points(default, null):Array<Point3DF>;
-  public var lines (default, null):Array<{f:Int, t:Int}>;
-  public var tiles (default, null):Array<Tile>;
-  private var show:Tile;
-  private var showi:Int;
-  
-  public function new(
-    points:Array<Point3DF>, lines:Array<{f:Int, t:Int}>, tiles:Array<Tile>
-  ){
-    this.points = points;
-    this.lines  = lines;
-    this.tiles  = tiles;
-    
-    showi = 0;
-    show = this.tiles[showi];
-  }
-  
-  public function subdivide(n:Int):Geodesic {
-    var subpoints:Array<Point3DF> = [];
+    var subpoints:Array<GeoPoint> = [];
     var subtiles  = [];
     
     var linesUsed:Array<{f:Int, t:Int, p:Array<Int>}> = [];
@@ -142,7 +119,6 @@ class Geodesic {
       }
       return ret;
     }
-    
     inline function closest(point:Point3DF):Int {
       var ret = -1;
       for (pi in 0...subpoints.length){
@@ -153,27 +129,21 @@ class Geodesic {
       }
       if (ret == -1){
         ret = subpoints.length;
-        subpoints.push(point);
+        subpoints.push(GeoPoint.ofPoint(point));
       }
       return ret;
+    }
+    inline function subscribeTile(tile:Tile):Void {
+      for (p in tile.points){
+        subpoints[p].tiles.push(tile);
+      }
+      subtiles.push(tile);
     }
     
     for (t in tiles){
       var po = points[t.points[0]];
       var px = points[t.points[1]].subtract(po).scale(1 / n);
       var py = points[t.points[2]].subtract(po).scale(1 / n);
-      
-      /*
-      var ll = linesUsed.length;
-      
-      var lxi  = lineCheck(t.points[0], t.points[1]);
-      var lyi  = lineCheck(t.points[0], t.points[2]);
-      var lxyi = lineCheck(t.points[1], t.points[2]);
-      
-      var lx  = lxi  >= ll;
-      var ly  = lyi  >= ll;
-      var lxy = lxyi >= ll;
-      */
       
       var ppoints = [];
       var ptiles = [];
@@ -190,104 +160,228 @@ class Geodesic {
         if ((x == 0 || y == 0) || (x + y > n + 1)){
           continue;
         }
-        var lq = new Tile([], [
+        subscribeTile(new Tile([
              ppoints[(x - 1) + (y - 1) * (n + 1)]
             ,ppoints[(x    ) + (y - 1) * (n + 1)]
             ,ppoints[(x - 1) + (y    ) * (n + 1)]
-          ]);
-        subtiles.push(lq);
-        if (x + y < n + 1){
-          var uq = new Tile([lq], [
-               ppoints[(x    ) + (y - 1) * (n + 1)]
-              ,ppoints[(x    ) + (y    ) * (n + 1)]
-              ,ppoints[(x - 1) + (y    ) * (n + 1)]
-            ]);
-          subtiles.push(uq);
-          lq.adjacent.push(uq);
+          ]));
+        if (x + y > n){
+          continue;
+        }
+        subscribeTile(new Tile([
+             ppoints[(x    ) + (y - 1) * (n + 1)]
+            ,ppoints[(x    ) + (y    ) * (n + 1)]
+            ,ppoints[(x - 1) + (y    ) * (n + 1)]
+          ]));
+      }
+    }
+    
+    for (p in subpoints){
+      for (ti in 0...p.tiles.length){
+        for (oi in (ti + 1)...p.tiles.length){
+          if (intersect(p.tiles[ti].points, p.tiles[oi].points).length == 2){
+            if (p.tiles[ti].adjacent.indexOf(p.tiles[oi]) == -1){
+              p.tiles[ti].adjacent.push(p.tiles[oi]);
+            }
+            if (p.tiles[oi].adjacent.indexOf(p.tiles[ti]) == -1){
+              p.tiles[oi].adjacent.push(p.tiles[ti]);
+            }
+          }
         }
       }
     }
-    return new Geodesic(subpoints, [], subtiles);
+    
+    return new Geodesic(subpoints, subtiles);
   }
   
-  public function cycleShow(i:Int):Void {
-    showi += i;
-    showi = (showi + tiles.length) % tiles.length;
-    show = tiles[showi];
+  public var points(default, null):Vector<GeoPoint>;
+  public var tiles (default, null):Vector<Tile>;
+  public var pents (default, null):Vector<GeoPoint>;
+  
+  public var height(default, null):Vector<Float>;
+  
+  private var rpoints:Vector<GeoPoint>;
+  private var rpVisible:Int = 0;
+  private var rtiles:Vector<Tile>;
+  private var rtVisible:Int = 0;
+  
+  public function new(points:Array<GeoPoint>, tiles:Array<Tile>){
+    this.points = Vector.fromArrayCopy(points);
+    this.tiles  = Vector.fromArrayCopy(tiles);
+    this.pents  = new Vector<GeoPoint>(12);
+    var pi:Int = 0;
+    for (p in points){
+      if (p.tiles.length == 5){
+        pents[pi] = p;
+      }
+    }
+    for (t in tiles){
+      t.colour = 0xFF000000 | FM.prng.next();
+    }
+    rpoints = new Vector<GeoPoint>(points.length);
+    rtiles = new Vector<Tile>(tiles.length);
+    height = new Vector<Float>(points.length);
+    for (i in 0...height.length){
+      height[i] = FM.prng.nextFloat(.2);
+    }
+    renbuf = new Vector<Int>(Main.HEIGHT * RB_WIDTH);
+    rotate(Quaternion.identity);
   }
   
-  public function render(bmp:Bitmap, angle:Float):Void {
-    /*var rm = Quaternion.axisRotation(
-        (new Point3DF(1, 0, 0)).unit(), angle
-      ).rotationMatrix;
-      /*
-    var c = Math.cos(angle);
-    var s = Math.sin(angle);
-    var rm = new RotationMatrix3D(Vector.fromArrayCopy([
-         1, 0, 0
-        ,0, c, -s
-        ,0, s, c
-      ]));*/
-    var q = Quaternion.axisRotation(
-        (new Point3DF(1, 0, 0)).unit(), Platform.mouse.x / 100
-      ).multiply(Quaternion.axisRotation(
-        (new Point3DF(0, 1, 0)).unit(), Platform.mouse.y / 100
-      ));
-    var rpoints = points.map(q.rotate);
+  public function rotate(q:Quaternion):Void {
+    rpVisible = 0;
+    for (p in points){
+      rpoints[rpVisible] = GeoPoint.ofPoint(q.rotate(p).scale(.8 + Math.sin((ph / 120) * Math.PI * 2) * height[rpVisible]));
+      rpVisible++;
+    }
+    rtVisible = 0;
+    for (t in tiles){
+      t.visible
+        = !( rpoints[t.points[0]].z < 0
+          && rpoints[t.points[1]].z < 0
+          && rpoints[t.points[2]].z < 0)
+          && !(rpoints[t.points[0]].y >= Main.HEIGHT
+          &&   rpoints[t.points[1]].y >= Main.HEIGHT
+          &&   rpoints[t.points[2]].y >= Main.HEIGHT);
+      if (t.visible){
+        rtiles[rtVisible++] = t;
+      }
+    }
+  }
+  
+  private static inline var RB_WIDTH :Int = 40;
+  private static inline var RB_XMIN  :Int = 0;
+  private static inline var RB_XMAX  :Int = 1;
+  private static inline var RB_NUM   :Int = 2;
+  private static inline var RB_TILES :Int = 3;
+  
+  private static inline var RB_TWIDTH:Int = 2;
+  private static inline var RB_TX    :Int = 0;
+  private static inline var RB_TTILE :Int = 1;
+  
+  private var ph:Int = 0;
+  private var ran:Float = 0;
+  private var renbuf:Vector<Int>;
+  
+  public function render(bmp:Bitmap, scale:Float):Void {
+    rotate(Quaternion.axisRotation(new Point3DF(1, 0, .5), ran));
+    ran += .01;
+    ph++;
+    ph %= 120;
     
     inline function project(p:Point3DF, ?ox:Int = 0, ?oy:Int = 0):Point2DI {
       return new Point2DI(
-           FM.floor(p.x * 140 + Main.HWIDTH + ox)
-          ,FM.floor(p.y * 130 + Main.HHEIGHT + 70 + oy)
+           FM.floor(p.x * scale + Main.HWIDTH + ox)
+          ,FM.floor(p.y * scale * .93 + Main.HHEIGHT + 70 + oy)
         );
     }
-    /*
-    inline function projectF(p:Point3DF):Point2DF {
-      return new Point2DF(
-           p.x * 30 + Main.HWIDTH
-          ,p.y * 30 + Main.HHEIGHT
-        );
-    }*/
     
-    //show = (FM.prng.nextMod(10) > 8 ? FM.prng.nextElement(tiles) : show);
-    for (show in tiles){
-      if (   rpoints[show.points[0]].z < 0
-          && rpoints[show.points[1]].z < 0
-          && rpoints[show.points[2]].z < 0){
-        continue;
-      }
-      //show = FM.prng.nextElement(tiles);
-      for (n in show.adjacent){
-        for (j in 0...3){
-          Bresenham.getCurve(
-              project(rpoints[n.points[j]], 1, 1), project(rpoints[n.points[(j + 1) % 3]], 1, 1)
-            ).apply(bmp, 0xFF0000AA, false);
+    var xmin:Int = Main.WIDTH - 1;
+    var xmax:Int = 0;
+    var ymin:Int = Main.HEIGHT - 1;
+    var ymax:Int = 0;
+    
+    for (y in 0...Main.HEIGHT){
+      renbuf[y * RB_WIDTH + RB_XMIN] = Main.WIDTH - 1;
+      renbuf[y * RB_WIDTH + RB_XMAX] = 0;
+      renbuf[y * RB_WIDTH + RB_NUM]  = 0;
+    }
+    
+    for (rti in 0...rtVisible){
+      var tile = rtiles[rti];
+      for (i in 0...3){
+        for (p in (new Bresenham(
+             project(rpoints[tile.points[i]])
+            ,project(rpoints[tile.points[(i + 1) % 3]])
+          ))){
+          if (xmin > p.x) xmin = p.x;
+          if (xmax < p.x) xmax = p.x;
+          if (ymin > p.y) ymin = p.y;
+          if (ymax < p.y) ymax = p.y;
+          
+          if (renbuf[p.y * RB_WIDTH + RB_XMIN] > p.x) renbuf[p.y * RB_WIDTH + RB_XMIN] = p.x;
+          if (renbuf[p.y * RB_WIDTH + RB_XMAX] < p.x) renbuf[p.y * RB_WIDTH + RB_XMAX] = p.x;
+          var pi:Int = 0;
+          /*
+          while (pi < renbuf[p.y * RB_WIDTH + RB_NUM]){
+            if (p.x < renbuf[p.y * RB_WIDTH + RB_TILES + RB_TWIDTH * pi + RB_TX]){
+              break;
+            }
+            pi++;
+          }
+          // maybe Vector.blit?
+          var pj:Int = renbuf[p.y * RB_WIDTH + RB_NUM];
+          while (pj > pi){
+            renbuf[p.y * RB_WIDTH + RB_TILES + RB_TWIDTH * (pj + 1) + RB_TTILE]
+              = renbuf[p.y * RB_WIDTH + RB_TILES + RB_TWIDTH * pj + RB_TTILE];
+            renbuf[p.y * RB_WIDTH + RB_TILES + RB_TWIDTH * (pj + 1) + RB_TX]
+              = renbuf[p.y * RB_WIDTH + RB_TILES + RB_TWIDTH * pj + RB_TX];
+            pj--;
+          }*/
+          renbuf[p.y * RB_WIDTH + RB_TILES + RB_TWIDTH * pi + RB_TX] = p.x;
+          renbuf[p.y * RB_WIDTH + RB_TILES + RB_TWIDTH * pi + RB_TTILE] = rti;
+          renbuf[p.y * RB_WIDTH + RB_NUM] = 1;
         }
+        /*
+        Bresenham.getCurve(
+            project(rpoints[tile.points[i]]), project(rpoints[tile.points[(i + 1) % 3]])
+          ).applyVector(vec, Main.WIDTH, Main.HEIGHT, 0xFF00AA00, false);
+        //*/
       }
+    }
+    
+    if (xmax > xmin && ymax > ymin){
+      //var vec = bmp.getVectorRect(xmin, ymin, xmax - xmin, ymax - ymin);
+      //var vi = 0;
+      //trace(renbuf[ymin * RB_WIDTH + RB_XMIN], renbuf[ymin * RB_WIDTH + RB_XMAX]);
+      for (y in ymin...ymax){
+        //vi = y * (xmax - xmin) + renbuf[y * RB_WIDTH + RB_XMIN];
+        /*
+        bmp.set(renbuf[y * RB_WIDTH + RB_XMIN], y, 0xFFAA0000);
+        bmp.set(renbuf[y * RB_WIDTH + RB_XMAX], y, 0xFFAA0000);
+        */
+        bmp.fillRect(
+             renbuf[y * RB_WIDTH + RB_XMIN], y
+            ,renbuf[y * RB_WIDTH + RB_XMAX] - renbuf[y * RB_WIDTH + RB_XMIN], 1
+            ,0xFF000000 | renbuf[y * RB_WIDTH + RB_TILES + RB_TX]
+          );
+        for (tx in 0...renbuf[y * RB_WIDTH + RB_NUM]){
+          /*
+          bmp.fillRect(
+               renbuf[y * RB_WIDTH + RB_TILES + RB_TWIDTH * tx + RB_TX]
+              ,y
+              ,renbuf[y * RB_WIDTH + RB_TILES + RB_TWIDTH * (tx + 1) + RB_TX]
+               - renbuf[y * RB_WIDTH + RB_TILES + RB_TWIDTH * tx + RB_TX]
+              ,1
+              ,0xFFAA0000 //rtiles[renbuf[y * RB_WIDTH + RB_TILES + RB_TWIDTH * tx + RB_TTILE]].colour
+            );
+          */
+        }
+        /*
+        for (x in renbuf[p.y * RB_WIDTH + RB_XMIN]...renbuf[p.y * RB_WIDTH + RB_XMAX]){
+          
+          vi++;
+        }*/
+      }
+      //bmp.setVectorRect(xmin, ymin, xmax - xmin, ymax - ymin, vec);
+    }
+    
+    bmp.fillRect(0, ymin, 100, 1, 0x99AA0000);
+    bmp.fillRect(0, ymax, 100, 1, 0x99AA0000);
+    bmp.fillRect(xmin, 0, 1, 100, 0x99AA0000);
+    bmp.fillRect(xmax, 0, 1, 100, 0x99AA0000);
+    
+    /*
+    var vec = bmp.getVector();
+    for (rti in 0...rtVisible){
+      var tile = rtiles[rti];
       for (i in 0...3){
         Bresenham.getCurve(
-            project(rpoints[show.points[i]]), project(rpoints[show.points[(i + 1) % 3]])
-          ).apply(bmp, 0xFF00AA00, false);
+            project(rpoints[tile.points[i]]), project(rpoints[tile.points[(i + 1) % 3]])
+          ).applyVector(vec, Main.WIDTH, Main.HEIGHT, 0xFF00AA00, false);
       }
     }
-    
-    /*
-    for (l in lines){
-      Bresenham.getCurve(
-          project(rpoints[l.f]), project(rpoints[l.t])
-        ).apply(bmp, 0xFF00AA00);<p></p>
-      /*XiaolinWu.getCurve(
-          projectF(rpoints[l.f]), projectF(rpoints[l.t])
-        ).apply(bmp, 0xFF00AA00);* /
-    }
+    bmp.setVector(vec);
     */
-    
-    for (p in rpoints){
-      if (p.z < 0){
-        continue;
-      }
-      var pp = project(p);
-      bmp.fillRectAlpha(pp.x, pp.y, 3, 3, 0x55FF0000);
-    }
   }
 }

@@ -14,7 +14,8 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
 
  - [ ] GLSL / canvas ???
  - [ ] planet
-   - [ ] tile grid
+   - [x] tile grid
+   - [ ] interaction
    - [ ] terrain
    - [ ] layers
    - [ ] water
