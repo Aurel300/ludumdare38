@@ -40,6 +40,7 @@ class STest extends State {
   
   override public function tick():Void {
     app.bitmap.fill(0xFF333333);
-    ico.render(app.bitmap, Platform.mouse.y);
+    ico.rotate(Quaternion.axisRotation(new Point3DF(1, 0, .5), Platform.mouse.x / 100), Platform.mouse.y);
+    ico.render(app.bitmap);
   }
 }

@@ -9,6 +9,7 @@ class Tile {
   
   public var colour:Colour;
   public var visible:Bool;
+  public var xsum:Int;
   
   public function new(points:Array<Int>){
     this.adjacent = [];
