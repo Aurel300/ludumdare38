@@ -1,0 +1,4 @@
+--macro addClassPath('/DevProjects/Libs/plustd/package/src')
+--macro addClassPath('/DevProjects/LD48/game/LD 38/repo/common')
+-main Main.hx
+-js babel.js
