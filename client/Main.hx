@@ -2,6 +2,7 @@ import sk.thenet.FM;
 import sk.thenet.app.*;
 import sk.thenet.app.Keyboard.Key;
 import sk.thenet.app.asset.Bind as AssetBind;
+import sk.thenet.app.asset.Trigger as AssetTrigger;
 import sk.thenet.bmp.*;
 import sk.thenet.geom.*;
 import sk.thenet.plat.Platform;
@@ -19,7 +20,8 @@ class Main extends Application {
     super([
          Assets([
               Embed.getBitmap("game", "png/game.png")
-             ,new AssetBind(["game"], Palette.init)
+             ,new AssetTrigger("pal", ["game"], Palette.init)
+             ,new AssetBind(["game", "pal"], Sprites.init)
            ])
         ,Framerate(60)
         ,Surface(400, 225, 1)

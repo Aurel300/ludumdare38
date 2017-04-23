@@ -206,15 +206,21 @@ class Geodesic {
   public var points(default, null):Vector<GeoPoint>;
   public var tiles (default, null):Vector<Tile>;
   public var pents (default, null):Vector<GeoPoint>;
-  
   public var height(default, null):Vector<Float>;
   
   private var rpoints:Vector<GeoPoint>; // rotated points
-  //private var rpVisible:Int = 0;
   private var ppoints:Vector<Point2DI>; // projected points
   private var upoints:Vector<Point2DI>; // projected points, underground
   private var ptiles:Vector<Tile>; // rotated and projected tiles
   private var ptVisible:Int = 0;
+  private var stiles:Vector<Tile>; // tiles with sprites
+  private var stVisible:Int = 0;
+  private var lastScale:Float = 1;
+  private var facLight:Vector<Int>;
+  private var facLightPattern:Vector<Int>;
+  private var spriteOffsetPattern:Vector<Float>;
+  
+  private var ph:Int = 0;
   
   public function new(points:Array<GeoPoint>, tiles:Array<Tile>){
     this.points = Vector.fromArrayCopy(points);
@@ -234,31 +240,39 @@ class Geodesic {
     }
     
     for (i in 0...20){
-      tiles[i +  0].occupied = 0;
-      tiles[i + 20].occupied = 1;
-      tiles[i + 40].occupied = 2;
-      tiles[i + 60].occupied = 3;
-      tiles[i + 80].occupied = 4;
-      tiles[i +100].occupied = 5;
-      tiles[i +120].occupied = 6;
-      tiles[i +140].occupied = 7;
+      for (f in 0...8){
+        if (i == 5){
+          tiles[i + f * 20].sprite = f;
+        }
+        tiles[i + f * 20].occupied = f;
+      }
     }
     
     rpoints = new Vector(points.length);
     ppoints = new Vector(points.length);
     upoints = new Vector(points.length);
     ptiles = new Vector(tiles.length);
+    stiles = new Vector(tiles.length);
     height = new Vector(points.length);
     for (i in 0...height.length){
       height[i] = FM.prng.nextFloat(.2);
     }
     select = tiles[35];
+    facLight = new Vector(Palette.facPatterns.length);
+    facLightPattern = Vector.fromArrayCopy([
+        for (i in 0...8) for (j in 0...120){
+          FM.floor(4 * Math.sin(((j + i * 45) / 120) * Math.PI * 2));
+        }
+      ]);
+    
+    spriteOffsetPattern = Vector.fromArrayCopy([
+        for (i in 0...120){
+          Math.cos((i / 120) * Math.PI * 2);
+        }
+      ]);
     //renbuf = new Vector<Int>(Main.HEIGHT * RB_WIDTH);
     rotate(Quaternion.identity);
   }
-  
-  private var ph:Int = 0;
-  private var lastScale:Float = 1;
   
   public function rotate(q:Quaternion, ?doScale:Bool = true):Void {
     var rpVisible = 0;
@@ -272,11 +286,6 @@ class Geodesic {
         );
       rpVisible++;
     }
-    
-    /*
-    ph++;
-    ph %= 360;
-    */
     
     if (doScale){
       scale(lastScale);
@@ -306,6 +315,7 @@ class Geodesic {
     }
     
     ptVisible = 0;
+    stVisible = 0;
     for (t in tiles){
       if (rpoints[t.points[0]].z < -.2){
         t.visible = false;
@@ -318,6 +328,7 @@ class Geodesic {
             ppoints[t.points[0]], ppoints[t.points[1]], ppoints[t.points[2]]
           );
         t.visible = area > 0;
+        t.alpha = FM.maxI(0, 7 - FM.floor((area * 2.6 / scale)));
         t.colour = (if (t.occupied != -1){
             FM.minI(
                  Palette.FACTION
@@ -327,7 +338,7 @@ class Geodesic {
             FM.minI(
                  Palette.patterns.length - 1
                 ,FM.minI(Palette.ALPHA - 1, FM.floor((area * 4 / scale)) + (t.pent ? 5 : 0))
-                + FM.maxI(0, 3 - FM.floor((area * 1.3 / scale))) * Palette.ALPHA
+                + (t.alpha >> 1) * Palette.ALPHA
               );
           });
         //trace(t.colour);
@@ -336,43 +347,40 @@ class Geodesic {
       }
       if (t.visible){
         ptiles[ptVisible++] = t;
+        if (t.sprite != -1){
+          var xmin = ppoints[t.points[0]].x;
+          var xmax = ppoints[t.points[0]].x;
+          var ymin = ppoints[t.points[0]].y;
+          var ymax = ppoints[t.points[0]].y;
+          for (i in 1...3){
+            if (ppoints[t.points[i]].x < xmin) xmin = ppoints[t.points[i]].x;
+            if (ppoints[t.points[i]].x > xmax) xmax = ppoints[t.points[i]].x;
+            if (ppoints[t.points[i]].y < ymin) ymin = ppoints[t.points[i]].y;
+            if (ppoints[t.points[i]].y > ymax) ymax = ppoints[t.points[i]].y;
+          }
+          t.spriteX = (xmin + xmax) >> 1;
+          t.spriteY = (ymin + ymax) >> 1;
+          var oangle = Math.atan2(
+              Main.HEIGHT - 20 - t.spriteY, Main.HWIDTH - t.spriteX
+            );
+          t.spriteOX = (Math.cos(oangle) * 4);
+          t.spriteOY = (Math.sin(oangle) * 4);
+          t.spriteAngle = Math.atan2(
+              Main.HEIGHT + 40 - t.spriteY, Main.HWIDTH - t.spriteX
+            ) - Math.PI * .5;
+          stiles[stVisible++] = t;
+        }
       }
     }
   }
-  /*
-  private static inline var RB_WIDTH :Int = 2000;
-  private static inline var RB_XMIN  :Int = 0;
-  private static inline var RB_XMAX  :Int = 1;
-  private static inline var RB_NUM   :Int = 2;
-  private static inline var RB_TILES :Int = 3;
   
-  private static inline var RB_TWIDTH:Int = 3;
-  private static inline var RB_TX    :Int = 0;
-  private static inline var RB_TTILE :Int = 1;
-  private static inline var RB_TXSUM :Int = 2;
-  
-  private var renbuf:Vector<Int>;
-  */
   private var select:Tile;
   
   public function render(bmp:Bitmap):Void {
-    /*
-    var xmin:Int = Main.WIDTH - 1;
-    var xmax:Int = 0;
-    var ymin:Int = Main.HEIGHT - 1;
-    var ymax:Int = 0;
-    var tbuf:Vector<Int> = new Vector<Int>(Main.HEIGHT);
-    
-    for (y in 0...Main.HEIGHT){
-      renbuf[y * RB_WIDTH + RB_XMIN] = Main.WIDTH - 1;
-      renbuf[y * RB_WIDTH + RB_XMAX] = 0;
-      renbuf[y * RB_WIDTH + RB_NUM]  = 0;
-      renbuf[y * RB_WIDTH + RB_TILES + RB_TX]    = Main.WIDTH - 1;
-      renbuf[y * RB_WIDTH + RB_TILES + RB_TTILE] = -1;
-      renbuf[y * RB_WIDTH + RB_TILES + RB_TXSUM] = Main.WIDTH * 3;
-      tbuf[y] = Main.WIDTH - 1;
+    for (i in 0...8){
+      facLight[i] = facLightPattern[i * 120 + ((ph * (i < 4 ? 1 : 2)) % 120)];
     }
-    */
+    
     var lastSelect = select;
     select = null;
     
@@ -386,6 +394,9 @@ class Geodesic {
       var c = tile.colour;
       if (sel){
         c += (tile.occupied == -1 ? 10 : 2);
+      }
+      if (tile.occupied != -1){
+        c += facLight[tile.occupied];
       }
       
       inline function renderScan():Void {
@@ -423,35 +434,30 @@ class Geodesic {
         if (p.y != ly && ly != -1){
           renderScan();
         }
-        if (txmin > p.x) txmin = p.x;
-        if (txmax < p.x) txmax = p.x;
-        ly = p.y;
-      }
-      if (ly != -1){
-        renderScan();
-      }
-      
-      /*
-      c = tile.ucolour;
-      for (p in new TopDownBresenhams(
-           upoints[tile.points[0]]
-          ,upoints[tile.points[1]]
-          ,upoints[tile.points[2]]
-        )){
-        if (p.y != ly && ly != -1){
-          renderScan();
+        if (txmin > p.x){
+          txmin = p.x;
         }
-        if (txmin > p.x) txmin = p.x;
-        //if (xmin > p.x) xmin = p.x;
-        if (txmax < p.x) txmax = p.x;
-        //if (xmax < p.x) xmax = p.x;
+        if (txmax < p.x){
+          txmax = p.x;
+        }
         ly = p.y;
       }
       if (ly != -1){
         renderScan();
       }
-      */
     }
+    
+    for (rti in 0...stVisible){
+      var tile = stiles[rti];
+      bmp.blitAlpha(
+           Sprites.factionSigns[tile.sprite].get(tile.alpha, tile.spriteAngle)
+          ,tile.spriteX - 24 + FM.floor(spriteOffsetPattern[ph] * tile.spriteOX)
+          ,tile.spriteY - 24 + FM.floor(spriteOffsetPattern[ph] * tile.spriteOY)
+        );
+    }
+    
+    ph++;
+    ph %= 120;
   }
 }
 
@@ -512,21 +518,5 @@ class TopDownBresenhams {
       f3 = null;
     }
     return ret;
-    /*
-    var ret:Point2DI = null;
-    if (f1 != null
-        && ((f2 == null || f1.y <= f2.y)
-            && (f3 == null || f1.y <= f3.y))){
-      ret = f1;
-      f1 = null;
-    } else if (f2 != null
-        && (f3 == null || f2.y <= f3.y)){
-      ret = f2;
-      f2 = null;
-    } else {
-      ret = f3;
-      f3 = null;
-    }
-    return ret;*/
   }
 }

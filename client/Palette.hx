@@ -1,5 +1,3 @@
-package common;
-
 import haxe.ds.Vector;
 import js.html.CanvasPattern;
 import sk.thenet.FM;
