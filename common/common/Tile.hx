@@ -12,6 +12,7 @@ class Tile {
   public var visible:Bool;
   public var xsum:Int;
   public var pent:Bool;
+  public var occupied:Int = -1;
   
   public function new(points:Array<Int>){
     this.adjacent = [];

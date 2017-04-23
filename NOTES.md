@@ -1,6 +1,6 @@
 #### LD38 - A small world ####
 
-# Untitled #
+# Planet of Babel #
 
 A planet is shared by aliens / shipwrecks of all worlds and cultures (realtime multiplayer). They cannot understand each other, but to succeed, they must cooperate.
 
@@ -15,7 +15,7 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
  - [x] canvas
  - [ ] planet
    - [x] tile grid
-   - [ ] interaction
+   - [.] interaction
    - [x] terrain
    - [ ] layers
    - [ ] water
@@ -24,8 +24,3 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
  - [ ] realtime multiplayer
    - [ ] events
  - [ ] karma
-
-## Name ideas ##
-
- - Gold rush
- - Planet of Babel
