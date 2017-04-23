@@ -8,6 +8,11 @@ import sk.thenet.plat.Platform;
 import sk.thenet.stream.bmp.*;
 
 class Geodesic {
+  public static var Y_OFFSET:Int = 70;
+  public static var Y_SCALE:Float = .93;
+  public static var CENTER:Point2DI
+    = new Point2DI(Main.HWIDTH, Main.HHEIGHT + Y_OFFSET);
+  
   public static function generateIcosahedron(n:Int):Geodesic {
     var phi = 1.618;
     var points = [
@@ -235,17 +240,17 @@ class Geodesic {
         }
       }
     }
-    for (t in tiles){
-      t.colour = 0xFF101010 | FM.prng.next();
-    }
-    
+    /*
     for (i in 0...20){
       for (f in 0...8){
-        if (i == 5){
-          tiles[i + f * 20].sprite = f;
-        }
         tiles[i + f * 20].occupied = f;
       }
+    }
+    */
+    for (i in 0...100){
+      var idx = FM.prng.nextMod(tiles.length);
+      tiles[idx].sprite = FM.prng.nextMod(7);
+      tiles[idx].occupied = FM.prng.nextMod(8);
     }
     
     rpoints = new Vector(points.length);
@@ -298,7 +303,7 @@ class Geodesic {
     inline function project(p:Point3DF, scale:Float):Point2DI {
       return new Point2DI(
            FM.floor(p.x * scale + Main.HWIDTH)
-          ,FM.floor(p.y * scale * .93 + Main.HHEIGHT + 70)
+          ,FM.floor(p.y * scale * Y_SCALE + Main.HHEIGHT + Y_OFFSET)
         );
     }
     
@@ -315,13 +320,21 @@ class Geodesic {
     }
     
     ptVisible = 0;
-    stVisible = 0;
+    var stilesP = [];
     for (t in tiles){
       if (rpoints[t.points[0]].z < -.2){
         t.visible = false;
       } else if (ppoints[t.points[0]].y >= Main.HEIGHT
-          && ppoints[t.points[1]].y >= Main.HEIGHT
-          && ppoints[t.points[2]].y >= Main.HEIGHT){
+              && ppoints[t.points[1]].y >= Main.HEIGHT
+              && ppoints[t.points[2]].y >= Main.HEIGHT){
+        t.visible = false;
+      } else if (ppoints[t.points[0]].x >= Main.WIDTH
+              && ppoints[t.points[1]].x >= Main.WIDTH
+              && ppoints[t.points[2]].x >= Main.WIDTH){
+        t.visible = false;
+      } else if (ppoints[t.points[0]].x < 0
+              && ppoints[t.points[1]].x < 0
+              && ppoints[t.points[2]].x < 0){
         t.visible = false;
       } else {
         var area = triangleArea(
@@ -348,18 +361,8 @@ class Geodesic {
       if (t.visible){
         ptiles[ptVisible++] = t;
         if (t.sprite != -1){
-          var xmin = ppoints[t.points[0]].x;
-          var xmax = ppoints[t.points[0]].x;
-          var ymin = ppoints[t.points[0]].y;
-          var ymax = ppoints[t.points[0]].y;
-          for (i in 1...3){
-            if (ppoints[t.points[i]].x < xmin) xmin = ppoints[t.points[i]].x;
-            if (ppoints[t.points[i]].x > xmax) xmax = ppoints[t.points[i]].x;
-            if (ppoints[t.points[i]].y < ymin) ymin = ppoints[t.points[i]].y;
-            if (ppoints[t.points[i]].y > ymax) ymax = ppoints[t.points[i]].y;
-          }
-          t.spriteX = (xmin + xmax) >> 1;
-          t.spriteY = (ymin + ymax) >> 1;
+          t.spriteX = FM.floor((ppoints[t.points[0]].x + ppoints[t.points[1]].x + ppoints[t.points[2]].x) / 3);
+          t.spriteY = FM.floor((ppoints[t.points[0]].y + ppoints[t.points[1]].y + ppoints[t.points[2]].y) / 3);
           var oangle = Math.atan2(
               Main.HEIGHT - 20 - t.spriteY, Main.HWIDTH - t.spriteX
             );
@@ -368,15 +371,26 @@ class Geodesic {
           t.spriteAngle = Math.atan2(
               Main.HEIGHT + 40 - t.spriteY, Main.HWIDTH - t.spriteX
             ) - Math.PI * .5;
-          stiles[stVisible++] = t;
+          stilesP.push(t);
         }
       }
     }
+    
+    stilesP.sort(zSortTile);
+    stVisible = 0;
+    for (t in stilesP){
+      stiles[stVisible++] = t;
+    }
+  }
+  
+  private inline function zSortTile(a:Tile, b:Tile):Int {
+    return (new Point2DI(b.spriteX, b.spriteY)).distanceManhattan(CENTER)
+         - (new Point2DI(a.spriteX, a.spriteY)).distanceManhattan(CENTER);
   }
   
   private var select:Tile;
   
-  public function render(bmp:Bitmap):Void {
+  public function render(bmp:Bitmap, allowSelect:Bool):Void {
     for (i in 0...8){
       facLight[i] = facLightPattern[i * 120 + ((ph * (i < 4 ? 1 : 2)) % 120)];
     }
@@ -395,9 +409,12 @@ class Geodesic {
       if (sel){
         c += (tile.occupied == -1 ? 10 : 2);
       }
+      /*
       if (tile.occupied != -1){
         c += facLight[tile.occupied];
       }
+      */
+      bmp.setFillPattern(tile.occupied != -1 ? Palette.facPatterns[tile.occupied][c] : Palette.patterns[c]);
       
       inline function renderScan():Void {
         if (txmax >= txmin){
@@ -406,11 +423,12 @@ class Geodesic {
             txmin -= 2;
             txmax += 2;
           }*/
-          if (Platform.mouse.y == ly && FM.withinI(Platform.mouse.x, txmin, txmax)){
+          if (   allowSelect
+              && Platform.mouse.y == ly
+              && FM.withinI(Platform.mouse.x, txmin, txmax)){
             select = tile;
           }
-          bmp.setFillPattern(tile.occupied != -1 ? Palette.facPatterns[tile.occupied][c] : Palette.patterns[c]);
-          bmp.fillRectPattern(txmin, ly, txmax - txmin, 1);
+          bmp.fillRectStyled(txmin, ly, txmax - txmin, 1);
           /*
           if (tile.occupied != -1){
             bmp.fillRect(txmin, ly, 1, 1, Palette.factions[tile.occupied + 8]);
@@ -449,10 +467,28 @@ class Geodesic {
     
     for (rti in 0...stVisible){
       var tile = stiles[rti];
+      var sel = (tile == select);
+      var pin = new Bresenham(
+           new Point2DI(tile.spriteX, tile.spriteY)
+          ,new Point2DI(
+               tile.spriteX - FM.floor(tile.spriteOX * (sel ? 5 : 2))
+              ,tile.spriteY - FM.floor(tile.spriteOY * (sel ? 5 : 2))
+            )
+        );
+      bmp.setFillColour(Palette.factions[8 + tile.occupied]);
+      if (pin.yLong){
+        for (p in pin){
+          bmp.fillRectStyled(p.x, p.y, 2, 1);
+        }
+      } else {
+        for (p in pin){
+          bmp.fillRectStyled(p.x, p.y, 1, 2);
+        }
+      }
       bmp.blitAlpha(
-           Sprites.factionSigns[tile.sprite].get(tile.alpha, tile.spriteAngle)
-          ,tile.spriteX - 24 + FM.floor(spriteOffsetPattern[ph] * tile.spriteOX)
-          ,tile.spriteY - 24 + FM.floor(spriteOffsetPattern[ph] * tile.spriteOY)
+           Sprites.units[tile.occupied][tile.sprite].get(tile.alpha, tile.spriteAngle)
+          ,tile.spriteX - 24 - FM.floor(tile.spriteOX * (sel ? 5.5 : 2.5))
+          ,tile.spriteY - 24 - FM.floor(tile.spriteOY * (sel ? 5.5 : 2.5))
         );
     }
     

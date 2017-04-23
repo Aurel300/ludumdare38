@@ -8,12 +8,11 @@ class Tile {
   public var points  (default, null):Array<Int>;
   
   public var colour:Int;
-  //public var ucolour:Colour;
   public var visible:Bool;
-  public var xsum:Int;
   public var pent:Bool;
   public var occupied:Int = -1;
   public var alpha:Int;
+  public var banner:Int = -1;
   public var sprite:Int = -1;
   public var spriteX:Int = -1;
   public var spriteY:Int = -1;

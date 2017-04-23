@@ -20,9 +20,12 @@ class Main extends Application {
     super([
          Assets([
               Embed.getBitmap("game", "png/game.png")
+             ,Embed.getBitmap("console_font", "png/font.png")
              ,new AssetTrigger("pal", ["game"], Palette.init)
              ,new AssetBind(["game", "pal"], Sprites.init)
+             ,new AssetBind(["game", "pal"], GUI.init)
            ])
+        ,Console
         ,Framerate(60)
         ,Surface(400, 225, 1)
         ,Keyboard

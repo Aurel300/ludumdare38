@@ -49,7 +49,7 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
 | generator     | 10 | 0+0 | 1   | 0   | 2   | 10  | generates 15 NRG (*) |
 | SL catcher    | 15 | 1+1 | 1   | 1   | 1   | 2   | SL caught is worth 3x (*) |
 | bow and arrow | 3  | 0+1 | 4   | 2   | 0   | 4   | ranged attack (2 range) |
-| trebuchet     | 5  | 0+2 | 2   | 2   | 1   | 1   | 3x damage against shields |
+| trebuchet     | 5  | 0+2 | 2   | 2   | 1   | 1   | 3x damage against shields; ranged attack (2 range) |
 | dynamite      | 7  | 5+5 | 3   | 10  | 0   | 1   | can move on enemy land; cannot attack; if killed, explodes, dealing its damage to all surrounding units (friendly or not) |
 
 (*) applies when the unit has not moved, attacked or been attacked this turn
@@ -57,6 +57,7 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
 ## Features / TODO ##
 
  - [ ] gameplay system
+   - [.] design
    - [ ] moving
    - [ ] building
    - [ ] attacking
@@ -67,7 +68,8 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
    - [x] canvas
    - [x] tile grid
    - [ ] GUI
-   - [.] sprites + deformation
+   - [x] sprites + deformation
+   - [ ] towers
    - [.] interaction
      - [x] selection
      - [.] rotation (rotate to tile automatically)
