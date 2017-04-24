@@ -22,8 +22,8 @@ class Main extends Application {
               Embed.getBitmap("game", "png/game.png")
              ,Embed.getBitmap("console_font", "png/font.png")
              ,new AssetTrigger("pal", ["game"], Palette.init)
-             ,new AssetBind(["game", "pal"], Sprites.init)
-             ,new AssetBind(["game", "pal", "console_font"], GUI.init)
+             ,new AssetTrigger("sprites", ["game", "pal"], Sprites.init)
+             ,new AssetBind(["game", "pal", "console_font", "sprites"], GUI.init)
            ])
         ,Console
         ,Framerate(60)

@@ -80,6 +80,7 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
    - [ ] building
    - [ ] attacking
  - [ ] realtime multiplayer
+   - [ ] gamestate
    - [ ] events
    - [ ] karma
  - [.] visuals
@@ -90,7 +91,7 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
    - [ ] towers
    - [.] interaction
      - [x] selection
-     - [.] rotation (rotate to tile automatically)
+     - [x] rotation (rotate to tile automatically)
    - [x] terrain
      - [ ] layers
      - [ ] water

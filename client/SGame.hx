@@ -34,6 +34,8 @@ class SGame extends State {
   }
   
   override public function mouseClick(_, _):Void {
-    gui.click();
+    if (!gui.click()){
+      gui.clickTile(ren.click());
+    }
   }
 }

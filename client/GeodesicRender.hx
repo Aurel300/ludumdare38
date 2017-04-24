@@ -11,6 +11,7 @@ class GeodesicRender {
   public static var Y_SCALE:Float = .93;
   public static var CENTER:Point2DI
     = new Point2DI(Main.HWIDTH, Main.HHEIGHT + Y_OFFSET);
+  public static var VIEW:Point3DF = (new Point3DF(0, -.5, 1)).unit();
   
   private var points:Vector<GeoPoint>;
   private var tiles:Vector<Tile>;
@@ -95,27 +96,29 @@ class GeodesicRender {
     ptVisible = 0;
     var stilesP = [];
     for (t in tiles){
-      if (rpoints[t.points[0]].z < -.2){
-        t.visible = false;
-      } else if (ppoints[t.points[0]].y >= Main.HEIGHT
-              && ppoints[t.points[1]].y >= Main.HEIGHT
-              && ppoints[t.points[2]].y >= Main.HEIGHT){
-        t.visible = false;
-      } else if (ppoints[t.points[0]].x >= Main.WIDTH
-              && ppoints[t.points[1]].x >= Main.WIDTH
-              && ppoints[t.points[2]].x >= Main.WIDTH){
-        t.visible = false;
-      } else if (ppoints[t.points[0]].x < 0
-              && ppoints[t.points[1]].x < 0
-              && ppoints[t.points[2]].x < 0){
-        t.visible = false;
-      } else {
-        var area = triangleArea(
+      var area = 0;
+      var visible = false;
+      if (rpoints[t.points[0]].z >= -.2
+          && (   ppoints[t.points[0]].y < Main.HEIGHT
+              || ppoints[t.points[1]].y < Main.HEIGHT
+              || ppoints[t.points[2]].y < Main.HEIGHT)
+          && (   ppoints[t.points[0]].x < Main.WIDTH
+              || ppoints[t.points[1]].x < Main.WIDTH
+              || ppoints[t.points[2]].x < Main.WIDTH)
+          && (   ppoints[t.points[0]].x >= 0
+              || ppoints[t.points[1]].x >= 0
+              || ppoints[t.points[2]].x >= 0)){
+        area = triangleArea(
             ppoints[t.points[0]], ppoints[t.points[1]], ppoints[t.points[2]]
           );
-        t.visible = area > 0;
+        visible = area > 0;
+      }
+      if (visible){
+        ptiles[ptVisible++] = t;
         t.alpha = FM.maxI(0, 7 - FM.floor((area * 2.6 / scale)));
-        t.colour = (if (t.faction != -1){
+        var ti = t.index;
+        var faction = GameState.faction[ti];
+        t.colour = (if (faction != -1){
             FM.minI(
                  Palette.FACTION
                 ,FM.floor(area * 1.3 / scale)
@@ -127,13 +130,7 @@ class GeodesicRender {
                 + (t.alpha >> 1) * Palette.ALPHA
               );
           });
-        //trace(t.colour);
-        //t.colour = (FM.minI(255, FM.floor((area * 20 / scale))) << 24) | 0x8899AA;
-        //t.ucolour = (FM.minI(255, FM.floor((area * 10 / scale))) << 24) | 0xBBCCDD;
-      }
-      if (t.visible){
-        ptiles[ptVisible++] = t;
-        if (t.sprite != -1){
+        if (GameState.unit[ti] != -1){
           t.spriteX = FM.floor((ppoints[t.points[0]].x + ppoints[t.points[1]].x + ppoints[t.points[2]].x) / 3);
           t.spriteY = FM.floor((ppoints[t.points[0]].y + ppoints[t.points[1]].y + ppoints[t.points[2]].y) / 3);
           var oangle = Math.atan2(
@@ -156,6 +153,22 @@ class GeodesicRender {
     }
   }
   
+  public function getTileCenter(ti:Int):Point3DF {
+    return (new Point3DF(
+         (rpoints[tiles[ti].points[0]].x + rpoints[tiles[ti].points[1]].x + rpoints[tiles[ti].points[2]].x) / 3
+        ,(rpoints[tiles[ti].points[0]].y + rpoints[tiles[ti].points[1]].y + rpoints[tiles[ti].points[2]].y) / 3
+        ,(rpoints[tiles[ti].points[0]].z + rpoints[tiles[ti].points[1]].z + rpoints[tiles[ti].points[2]].z) / 3
+      )).unit();
+  }
+  
+  public function lookAt(ti:Int):Quaternion {
+    var tc = getTileCenter(ti);
+    return Quaternion.axisRotation(
+         VIEW.cross(tc)
+        ,-Math.acos(tc.dot(VIEW)) * 1.5
+      );
+  }
+  
   private inline function zSortTile(a:Tile, b:Tile):Int {
     return (new Point2DI(b.spriteX, b.spriteY)).distanceManhattan(CENTER)
          - (new Point2DI(a.spriteX, a.spriteY)).distanceManhattan(CENTER);
@@ -173,29 +186,34 @@ class GeodesicRender {
     
     for (rti in 0...ptVisible){
       var tile = ptiles[rti];
-      var sel = (tile == lastSelect);
+      var ti = tile.index;
+      var sel = tile.selected || tile.hover;
+      var faction = GameState.faction[ti];
       
       var ly:Int = -1;
       var txmin:Int = Main.WIDTH - 1;
       var txmax:Int = 0;
       var c = tile.colour;
-      if (sel){
-        c += (tile.faction == -1 ? 10 : 2);
+      if (tile.hover){
+        c += (faction == -1 ? 5 : 1);
       }
-      /*
-      if (tile.faction != -1){
-        c += facLight[tile.faction];
+      if (tile.selected){
+        if (faction == -1){
+          c += 10 + facLight[0];
+          if (c >= Palette.ALPHA){
+            c = Palette.ALPHA - 1;
+          }
+        } else {
+          c += 1 + facLight[faction];
+          if (c >= Palette.FACTION){
+            c = Palette.FACTION - 1;
+          }
+        }
       }
-      */
-      bmp.setFillPattern(tile.faction != -1 ? Palette.facPatterns[tile.faction][c] : Palette.patterns[c]);
+      bmp.setFillPattern(faction != -1 ? Palette.facPatterns[faction][c] : Palette.patterns[c]);
       
       inline function renderScan():Void {
         if (txmax >= txmin){
-          /*
-          if (sel){
-            txmin -= 2;
-            txmax += 2;
-          }*/
           if (   allowSelect
               && Platform.mouse.y == ly
               && FM.withinI(Platform.mouse.x, txmin, txmax)){
@@ -213,7 +231,7 @@ class GeodesicRender {
         txmax = 0;
       }
       
-      for (p in (tile.faction == -1 ? new TopDownBresenhams(
+      for (p in (faction == -1 ? new TopDownBresenhams(
            ppoints[tile.points[0]]
           ,ppoints[tile.points[1]]
           ,ppoints[tile.points[2]]
@@ -240,7 +258,9 @@ class GeodesicRender {
     
     for (rti in 0...stVisible){
       var tile = stiles[rti];
-      var sel = (tile == select);
+      var ti = tile.index;
+      var sel = tile.selected;
+      var unitFac = GameState.unitFac[ti];
       var pin = new Bresenham(
            new Point2DI(tile.spriteX, tile.spriteY)
           ,new Point2DI(
@@ -248,7 +268,7 @@ class GeodesicRender {
               ,tile.spriteY - FM.floor(tile.spriteOY * (sel ? 5 : 2))
             )
         );
-      bmp.setFillColour(Palette.factions[8 + tile.faction]);
+      bmp.setFillColour(Palette.factions[8 + unitFac]);
       if (pin.yLong){
         for (p in pin){
           bmp.fillRectStyled(p.x, p.y, 2, 1);
@@ -259,7 +279,7 @@ class GeodesicRender {
         }
       }
       bmp.blitAlpha(
-           Sprites.units[tile.faction][tile.sprite].get(tile.alpha, tile.spriteAngle)
+           Sprites.units[unitFac][GameState.unit[ti]].get(tile.alpha, tile.spriteAngle)
           ,tile.spriteX - 24 - FM.floor(tile.spriteOX * (sel ? 5.5 : 2.5))
           ,tile.spriteY - 24 - FM.floor(tile.spriteOY * (sel ? 5.5 : 2.5))
         );
@@ -267,6 +287,29 @@ class GeodesicRender {
     
     ph++;
     ph %= 120;
+    
+    if (lastSelect != select){
+      if (lastSelect != null){
+        lastSelect.hover = false;
+        for (a in lastSelect.range){
+          a.hover = false;
+        }
+      }
+      if (select != null){
+        select.hover = true;
+        for (a in select.range){
+          a.hover = true;
+        }
+      }
+    }
+  }
+  
+  public function click():Int {
+    if (select != null){
+      ph = 0;
+      return select.index;
+    }
+    return -1;
   }
 }
 

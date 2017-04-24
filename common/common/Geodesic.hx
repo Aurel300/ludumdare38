@@ -201,6 +201,20 @@ class Geodesic {
     
     for (ti in 0...subtiles.length){
       subtiles[ti].index = ti;
+      var visited:Array<Tile> = [];
+      var queue:Array<Tile> = [subtiles[ti]];
+      while (queue.length > 0){
+        var qt = queue.shift();
+        visited.push(qt);
+        if (qt != subtiles[ti]){
+          subtiles[ti].range.push(qt);
+        }
+        for (a in qt.adjacent){
+          if (intersect(a.points, subtiles[ti].points).length > 0 && visited.indexOf(a) == -1){
+            queue.push(a);
+          }
+        }
+      }
     }
     
     return new Geodesic(subpoints, subtiles);
