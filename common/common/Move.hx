@@ -18,4 +18,5 @@ abstract MoveType(Int) from Int to Int {
   var Attack   = 1;
   var Capture  = 2;
   var Skip     = 3;
+  var Build    = 4;
 }

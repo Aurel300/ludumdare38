@@ -80,7 +80,7 @@ Column is attacker, line is defender.
  - [x] GUI drawer
  - [ ] GUI click (mechanical pen click?)
  - unit select:
-   - [ ] generator ???
+   - [x] generator
    - [x] SL catcher
    - [x] boot
    - [x] bow and arrow
@@ -108,7 +108,7 @@ Column is attacker, line is defender.
    - [x] design
    - [x] moving
    - [x] attacking - range?
-   - [ ] building
+   - [x] building
    - [ ] resources
  - [ ] realtime multiplayer
    - [x] "logins" / sessions

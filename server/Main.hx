@@ -1,3 +1,4 @@
+import haxe.Json;
 import haxe.io.Bytes;
 import neko.vm.Mutex;
 import sk.thenet.FM;
@@ -43,10 +44,14 @@ class Player {
   }
   
   private var ch:Websocket;
+  private var logged:Bool = false;
+  private var logId:Int;
+  private var logName:String;
+  private var logColour:Int;
+  private var spawned:Bool = false;
   
   private function new(ch:Websocket){
     this.ch = ch;
-    sendMaster();
     ch.listen("data", handleData);
   }
   
@@ -67,12 +72,26 @@ class Player {
       Main.mutex.acquire();
       GameState.decodeTurn(ev.data.getString(1, ev.data.length - 1));
       Main.mutex.release();
+      
+      case 0x07:
+      var obj = Json.parse(ev.data.getString(1, ev.data.length - 1));
+      logged  = true;
+      logId   = obj.i;
+      logName = obj.n;
+      logColour = obj.c;
+      sendMaster();
     }
     return true;
   }
   
   public function tick():Void {
     //sendOp(2, GameState.encodeTicker());
-    sendMaster();
+    if (logged){
+      if (!spawned){
+        GameState.spawnPlayer(logId, logName, logColour);
+        spawned = true;
+      }
+      sendMaster();
+    }
   }
 }

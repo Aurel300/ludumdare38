@@ -1,4 +1,6 @@
+import haxe.Json;
 import haxe.io.Bytes;
+import sk.thenet.FM;
 import sk.thenet.anim.Timing;
 import sk.thenet.app.*;
 import sk.thenet.event.*;
@@ -19,18 +21,29 @@ class SGame extends State {
     super("game", app);
   }
   
+  private function sendOp(op:Int, data:String):Void {
+    var b = Bytes.alloc(data.length + 1);
+    b.set(0, op);
+    b.blit(1, Bytes.ofString(data), 0, data.length);
+    ws.send(b);
+  }
+  
   override public function to():Void {
     ico = Geodesic.generateIcosahedron(4);
     GameState.initEmpty(ico);
     ws = Platform.createWebsocket();
     ws.listen("data", handleData);
     ws.connect("localhost", "/", 7738);
+    var fid = FM.round(Date.now().getTime() * 1327) ^ 0x7FFFFFFF;
+    GameState.selectFaction(fid);
+    sendOp(0x7, Json.stringify({
+         i: fid
+        ,n: "foo"
+        ,p: "bar"
+        ,c: GameState.currentColour
+      }));
     GameState.encodeTurnSend = function(){
-      var s = GameState.encodeTurn();
-      var d = Bytes.alloc(1 + s.length);
-      d.set(0, 0x01);
-      d.blit(1, Bytes.ofString(s), 0, s.length);
-      ws.send(d);
+      sendOp(0x01, GameState.encodeTurn());
     };
   }
   

@@ -26,10 +26,19 @@ class Main extends Application {
              ,Embed.getSound("bow_select", "wav/Bow_Select.wav")
              //,Embed.getSound("", "wav/Coin.wav")
              //,Embed.getSound("", "wav/CoinSmall.wav")
+             ,Embed.getSound("dagger_attack", "wav/Dagger_Attack.wav")
              ,Embed.getSound("dagger_select", "wav/Dagger_Select.wav")
+             ,Embed.getSound("dynamite_attack", "wav/Dynamite_Attack.wav")
+             ,Embed.getSound("dynamite_select", "wav/Dynamite_Select.wav")
              ,Embed.getSound("generator_select", "wav/Generator_Select.wav")
              ,Embed.getSound("gui_drawer", "wav/GUI_Drawer_Open.wav")
+             ,Embed.getSound("invalid_move", "wav/Invalid_Move.wav")
+             ,Embed.getSound("move", "wav/Move.wav")
+             ,Embed.getSound("player_connect", "wav/Player_Connect.wav")
+             ,Embed.getSound("sl_catcher_attack", "wav/Starlight_Catcher_Attack.wav")
+             ,Embed.getSound("sl_catcher_select", "wav/Starlight_Catcher_Select.wav")
              ,Embed.getSound("trebuchet_select", "wav/Trebuchet_Select_Final.wav")
+             ,Embed.getSound("turn_almost_over", "wav/Turn_Almost_Over.wav")
              ,new AssetTrigger("pal", ["game"], Palette.init)
              ,new AssetTrigger("sprites", ["game", "pal"], Sprites.init)
              ,new AssetBind(["game", "pal", "console_font", "sprites"], GUI.init)
@@ -41,7 +50,8 @@ class Main extends Application {
         ,Mouse
       ]);
     
-    preloader = new TNPreloader(this, "game", true);
+    preloader = new TNPreloader(this, "login", true);
+    addState(new SLogin(this));
     addState(new SGame(this));
     mainLoop();
   }

@@ -612,9 +612,9 @@ class GUI {
     }
     drawerTarget = DRAWER_MAX;
     if (faction != -1){
-      cacheDrawer.fillRect(3, 3, 17, 17, Palette.factions[(unitFac == faction ? 0 : 8) + faction]);
+      cacheDrawer.fillRect(3, 3, 17, 17, Palette.factions[(unitFac == faction ? 0 : 8) + GameState.colourOf(faction)]);
     }
-    cacheDrawer.blitAlpha(Sprites.units[unitFac][unit.sprite].get(0, 0), -12, -12);
+    cacheDrawer.blitAlpha(Sprites.units[GameState.colourOf(unitFac)][unit.sprite].get(0, 0), -12, -12);
     fontText.render(cacheDrawer, 24, 2, unit.name);
     if (stats == null){
       stats = unit.stats;
@@ -726,6 +726,7 @@ class GUI {
         true;
         
         case Build(o):
+        GameState.currentMoves.push(new Move(tileSelected, o - 1, Build));
         GameState.unit[tileSelected] = o - 1;
         GameState.unitFac[tileSelected] = GameState.faction[tileSelected];
         GameState.turned[tileSelected] = MoveStatus.Building;
@@ -808,7 +809,7 @@ class GUI {
             case 2: "boot_select";
             case 3: "bow_select";
             case 4: "trebuchet_select";
-            case 5: "";
+            case 5: "dynamite_select";
             case 6: "dagger_select";
             case _: "";
           });

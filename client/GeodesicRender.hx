@@ -128,7 +128,7 @@ class GeodesicRender {
         ptiles[ptVisible++] = t;
         t.alpha = FM.maxI(0, 7 - FM.floor((area * 2.6 / scale)));
         var ti = t.index;
-        var faction = GameState.faction[ti];
+        var faction = GameState.colourOf(GameState.faction[ti]);
         t.colour = (if (faction != -1){
             FM.minI(
                  Palette.FACTION
@@ -199,7 +199,7 @@ class GeodesicRender {
       var tile = ptiles[rti];
       var ti = tile.index;
       var sel = tile.selected || tile.hover;
-      var faction = GameState.faction[ti];
+      var faction = GameState.colourOf(GameState.faction[ti]);
       
       var ly:Int = -1;
       var txmin:Int = Main.WIDTH - 1;
@@ -231,12 +231,6 @@ class GeodesicRender {
             select = tile;
           }
           bmp.fillRectStyled(txmin, ly, txmax - txmin, 1);
-          /*
-          if (tile.faction != -1){
-            bmp.fillRect(txmin, ly, 1, 1, Palette.factions[tile.faction + 8]);
-            bmp.fillRect(txmax - 1, ly, 1, 1, Palette.factions[tile.faction + 8]);
-          }
-          */
         }
         txmin = Main.WIDTH - 1;
         txmax = 0;
@@ -279,7 +273,7 @@ class GeodesicRender {
               ,tile.spriteY - FM.floor(tile.spriteOY * (sel ? 5 : 2))
             )
         );
-      bmp.setFillColour(Palette.factions[8 + unitFac]);
+      bmp.setFillColour(Palette.factions[8 + GameState.colourOf(unitFac)]);
       if (pin.yLong){
         for (p in pin){
           bmp.fillRectStyled(p.x, p.y, 2, 1);
@@ -298,7 +292,7 @@ class GeodesicRender {
           case _: null;
         });
       bmp.blitAlpha(
-           Sprites.units[unitFac][GameState.unit[ti]].get(alpha, tile.spriteAngle)
+           Sprites.units[GameState.colourOf(unitFac)][GameState.unit[ti]].get(alpha, tile.spriteAngle)
           ,tile.spriteX - 24 - FM.floor(tile.spriteOX * (sel ? 5.5 : 2.5))
           ,tile.spriteY - 24 - FM.floor(tile.spriteOY * (sel ? 5.5 : 2.5))
         );
