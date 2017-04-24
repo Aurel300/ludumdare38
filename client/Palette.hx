@@ -19,7 +19,7 @@ class Palette {
   
   public static function init(am:AssetManager, _):Bool {
     var raw = am.getBitmap("game");
-    pal = Vector.fromArrayCopy([ for (i in 0...8) raw.get(i * 8, 0) ]);
+    pal = Vector.fromArrayCopy([ for (i in 0...24) raw.get((i % 8) * 8, (i >> 3) * 8) ]);
     patterns = Vector.fromArrayCopy([ for (a in 1...5) for (i in 0...(8 + 7 * MEZZO)){
         var p = Platform.createBitmap(
             4, 4, pal[FM.floor(i / (MEZZO + 1))]
@@ -58,7 +58,6 @@ class Palette {
             p.set(x, y, next);
           }
         }
-        p.debug();
         p.toFillPattern();
       } ]) ]);
     return false;

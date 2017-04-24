@@ -30,9 +30,12 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
    - more land = more SL caught
    - more land = more NRG upkeep needed
  - actions:
-   - taking nobody's land - 1 SL (1+1 NRG onetime + upkeep)
+   - taking nobody's land - 1 SL (1+1 NRG)
    - building on your land (must be empty) - cost of the unit
-   - attacking someone's land - your unit must be on an adjacent tile
+   - attacking someone's unit - your unit must be in range
+     - ATK is dealt to the enemy, if it survives, its ATK is dealt back (counterattack)
+   - capturing someone's land - 1 SL (0+1 NRG)
+     - successful only if the unit is not attacked
 
 ## Unit list ##
 
@@ -48,11 +51,26 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
 | shield        | 3  | 2+2 | 0   | 0   | 0   | 5   | lasts 3 turns; another unit can be underneath; absorbs all the damage of an attack, even if it dies (the unit underneath is not damaged) |
 | generator     | 10 | 0+0 | 1   | 0   | 2   | 10  | generates 15 NRG (*) |
 | SL catcher    | 15 | 1+1 | 1   | 1   | 1   | 2   | SL caught is worth 3x (*) |
+| boot          | 2  | 0+1 | 4   | 3   | 1   | 5   |       |
 | bow and arrow | 3  | 0+1 | 4   | 2   | 0   | 4   | ranged attack (2 range) |
 | trebuchet     | 5  | 0+2 | 2   | 2   | 1   | 1   | 3x damage against shields; ranged attack (2 range) |
-| dynamite      | 7  | 5+5 | 3   | 10  | 0   | 1   | can move on enemy land; cannot attack; if killed, explodes, dealing its damage to all surrounding units (friendly or not) |
+| dynamite      | 7  | 5+5 | 3   | 10  | 0   | 1   | cannot attack or capture; if killed, explodes, dealing its damage to all surrounding units (friendly or not) |
+| cloak & dagger| 10 | 0+5 | 6   | 5   | 0   | 1   | starts cloaked (invisible to enemies); ignores DEF and counterattack when attacking cloaked; attacking or capturing decloaks; not moving, attack, or being attacked for one turn on home land cloaks again
 
 (*) applies when the unit has not moved, attacked or been attacked this turn
+
+## Sound fx list ##
+
+ - [ ] GUI drawers (opening / closing of a drawer? moving stuff on a wooden desk?)
+ - [ ] GUI click (mechanical pen click?) (click in / click out separate)
+ - [ ] low time (štrkáč?)
+ - [ ] unit movement (like in Civ 2)
+ - [ ] unit attack
+ - [ ] unit destroyed
+ - [ ] land captured
+ - [ ] SL collected (coin sounds?)
+ - [ ] SL caught from sky
+ - [ ] new player spawn = meteorite crash
 
 ## Features / TODO ##
 
@@ -67,7 +85,7 @@ The gameplay has a slower pace, but it keeps running in the background. Encourag
  - [.] visuals
    - [x] canvas
    - [x] tile grid
-   - [ ] GUI
+   - [.] GUI
    - [x] sprites + deformation
    - [ ] towers
    - [.] interaction

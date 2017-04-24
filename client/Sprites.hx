@@ -45,6 +45,9 @@ class Sprites {
       var outline = am.getBitmap("game").fluent
           >> (new Cut(48 + u * 24, 80 + 24, 24, 24));
       for (f in 0...8){
+        if (f > 0){
+          units[f][u] = units[0][u];
+        }
         outline << (new Recolour(Palette.factions[8 + f]));
         base.bitmap.blitAlpha(outline, 0, 0);
         units[f][u] = new RotatedSprite(base, 24);

@@ -23,7 +23,7 @@ class Main extends Application {
              ,Embed.getBitmap("console_font", "png/font.png")
              ,new AssetTrigger("pal", ["game"], Palette.init)
              ,new AssetBind(["game", "pal"], Sprites.init)
-             ,new AssetBind(["game", "pal"], GUI.init)
+             ,new AssetBind(["game", "pal", "console_font"], GUI.init)
            ])
         ,Console
         ,Framerate(60)
@@ -31,6 +31,8 @@ class Main extends Application {
         ,Keyboard
         ,Mouse
       ]);
+    
+    GameState.init();
     
     preloader = new TNPreloader(this, "game", true);
     addState(new SGame(this));
