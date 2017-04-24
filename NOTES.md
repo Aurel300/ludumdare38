@@ -95,12 +95,12 @@ Column is attacker, line is defender.
    - [x] dynamite
    - [x] cloak and dagger
  - [x] low time
- - [ ] unit movement (like in Civ 2)
+ - [x] unit movement (like in Civ 2)
  - [ ] land captured
  - [x] SL collected (coin sounds?)
  - [x] SL caught from sky
  - [x] new player spawn = meteorite crash
- - [ ] invalid action (trying to build without resources)
+ - [x] invalid action (trying to build without resources)
 
 ## Features / TODO ##
 
@@ -111,7 +111,7 @@ Column is attacker, line is defender.
    - [ ] building
    - [ ] resources
  - [ ] realtime multiplayer
-   - [ ] "logins" / sessions
+   - [x] "logins" / sessions
    - [.] gamestate
      - [x] push turns
      - [x] resolve turns
