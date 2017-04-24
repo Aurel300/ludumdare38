@@ -85,12 +85,14 @@ Column is attacker, line is defender.
    - [x] boot
    - [x] bow and arrow
    - [x] trebuchet
+   - [x] dynamite
    - [x] cloak and dagger
- - unit arrow:
+ - unit attack:
    - [ ] SL catcher
    - [ ] boot
    - [x] bow and arrow
    - [ ] trebuchet
+   - [x] dynamite
    - [ ] cloak and dagger
  - [ ] low time (štrkáč?)
  - [ ] unit movement (like in Civ 2)
