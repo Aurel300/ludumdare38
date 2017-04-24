@@ -12,6 +12,7 @@ class Sprites {
   public static var units:Vector<Vector<RotatedSprite>>;
   public static var amasks:Vector<Bitmap>;
   public static var amasksManip:Vector<AlphaMask>;
+  public static var moveds:Vector<Bitmap>;
   
   public static function init(am:AssetManager, _):Bool {
     amasks = new Vector<Bitmap>(8);
@@ -31,7 +32,7 @@ class Sprites {
     factionSigns = Vector.fromArrayCopy([ for (i in 0...8)
         new RotatedSprite(
              am.getBitmap("game").fluent >> (new Cut(i * 24, 56, 24, 24))
-            ,24
+            ,2//4
           )
       ]);
     
@@ -50,8 +51,13 @@ class Sprites {
         }
         outline << (new Recolour(Palette.factions[8 + f]));
         base.bitmap.blitAlpha(outline, 0, 0);
-        units[f][u] = new RotatedSprite(base, 24);
+        units[f][u] = new RotatedSprite(base, 2/*4*/);
       }
+    }
+    
+    moveds = new Vector<Bitmap>(4);
+    for (i in 0...moveds.length){
+      moveds[i] = am.getBitmap("game").fluent >> (new Cut(216 + i * 24, 80, 24, 24));
     }
     
     return false;

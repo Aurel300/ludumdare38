@@ -2,55 +2,68 @@ package common;
 
 import haxe.ds.Vector;
 
+enum OrderType {
+  Cancel;
+  Skip;
+  Capture;
+  Shield;
+  Abandon;
+  Undo;
+  Build;
+  BuildCancel;
+}
+
 class Unit {
   public static var ORDERS:Vector<Order> = Vector.fromArrayCopy([
-       {name: "Cancel",  tooltip: "Deselect the unit."}
-      ,{name: "Move",    tooltip: "Move the unit to the specified location."}
-      ,{name: "Attack",  tooltip: "Attack another unit."}
-      ,{name: "Capture", tooltip: "Attempt to capture the land this unit is on."}
-      ,{name: "Shield",  tooltip: "Raise shields on this land."}
-      ,{name: "Abandon", tooltip: "Abandon this land."}
+       {name: "Cancel",  tooltip: "Deselect the tile.", type: Cancel}
+      ,{name: "Skip",    tooltip: "Do nothing with this unit.", type: Skip}
+      ,{name: "Capture", tooltip: "Attempt to capture the tile this unit is on.", type: Capture}
+      ,{name: "Shield",  tooltip: "Raise shields on this tile.", type: Shield}
+      ,{name: "Abandon", tooltip: "Abandon this tile.", type: Abandon}
+      ,{name: "Undo",    tooltip: "Undoes the turn of this unit.", type: Undo}
+      ,{name: "Build",   tooltip: "Build a unit here.", type: Build}
+      ,{name: "Stop build", tooltip: "Cancels the unit being built.\nResources are returned.", type: BuildCancel}
     ]);
   
-  public static var HOME_LAND_ORDERS:Array<Int> = [4, 5];
-  public static var AWAY_LAND_ORDERS:Array<Int> = [3];
+  public static var HOME_LAND_ORDERS:Array<Int> = [3];
+  public static var AWAY_LAND_ORDERS:Array<Int> = [2];
   
   public static var UNITS:Vector<Unit> = Vector.fromArrayCopy([
       new Unit(0, "Generator", {
            hp: 10, maxHp: 10
-          ,mp: 1, maxMp: 1
+          ,mp: 1
           ,atk: 0, def: 2, ran: 0
-        }, [0, 1])
-      ,new Unit(1, "Starlight catcher", {
+        }, [1])
+      ,new Unit(1, "Starlight Catcher", {
            hp: 2, maxHp: 2
-          ,mp: 1, maxMp: 1
-          ,atk: 1, def: 1, ran: 0
-        }, [0, 1, 2])
+          ,mp: 1
+          ,atk: 1, def: 1, ran: 1
+        }, [1, 2])
       ,new Unit(2, "Boot", {
            hp: 5, maxHp: 5
-          ,mp: 4, maxMp: 4
-          ,atk: 3, def: 1, ran: 0
-        }, [0, 1, 2])
-      ,new Unit(3, "Bow and arrow", {
+          ,mp: 2
+          ,atk: 3, def: 1, ran: 1
+        }, [1, 2])
+      ,new Unit(3, "Bow and Arrow", {
            hp: 4, maxHp: 4
-          ,mp: 4, maxMp: 4
-          ,atk: 2, def: 0, ran: 1
-        }, [0, 1, 2])
+          ,mp: 2
+          ,atk: 2, def: 0, ran: 2
+        }, [1, 2])
       ,new Unit(4, "Trebuchet", {
            hp: 1, maxHp: 1
-          ,mp: 2, maxMp: 2
+          ,mp: 1
           ,atk: 2, def: 1, ran: 2
-        }, [0, 1, 2])
-      ,new Unit(5, "Stick of dynamite", {
+        }, [1, 2])
+      ,new Unit(5, "Stick of Dynamite", {
            hp: 1, maxHp: 1
-          ,mp: 3, maxMp: 2
+          ,mp: 2
           ,atk: 10, def: 0, ran: 0
-        }, [0, 1])
-      ,new Unit(6, "Cloak and dagger", {
+        }, [1])
+      ,new Unit(6, "Cloak and Dagger", {
            hp: 1, maxHp: 1
-          ,mp: 6, maxMp: 6
-          ,atk: 5, def: 0, ran: 0
-        }, [0, 1, 2])
+          ,mp: 3
+          ,atk: 5, def: 0, ran: 1
+        }, [1, 2])
     ]);
   
   public var sprite:Int;
@@ -64,9 +77,21 @@ class Unit {
     this.stats = stats;
     this.orders = orders;
   }
+  
+  public function cloneStats():Stats {
+    return {
+         hp: stats.hp
+        ,maxHp: stats.maxHp
+        ,mp: stats.mp
+        ,atk: stats.atk
+        ,def: stats.def
+        ,ran: stats.ran
+      };
+  }
 }
 
 typedef Order = {
      name:String
     ,tooltip:String
+    ,type:OrderType
   };

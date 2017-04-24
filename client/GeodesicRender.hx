@@ -26,6 +26,7 @@ class GeodesicRender {
   private var facLight:Vector<Int>;
   private var facLightPattern:Vector<Int>;
   private var spriteOffsetPattern:Vector<Float>;
+  private var buildAlphaPattern:Vector<Int>;
   
   private var ph:Int = 0;
   
@@ -52,6 +53,12 @@ class GeodesicRender {
         }
       ]);
     
+    buildAlphaPattern = Vector.fromArrayCopy([
+        for (i in 0...120){
+          FM.floor((Math.cos((i / 120) * Math.PI * 2) + 1) * 4);
+        }
+      ]);
+    
     rotate(Quaternion.identity);
   }
   
@@ -71,8 +78,12 @@ class GeodesicRender {
     }
   }
   
-  public function scale(scale:Float):Void {
-    lastScale = scale;
+  public function scale(?scale:Float):Void {
+    if (scale != null){
+      lastScale = scale;
+    } else {
+      scale = lastScale;
+    }
     
     inline function project(p:Point3DF, scale:Float):Point2DI {
       return new Point2DI(
@@ -165,7 +176,7 @@ class GeodesicRender {
     var tc = getTileCenter(ti);
     return Quaternion.axisRotation(
          VIEW.cross(tc)
-        ,-Math.acos(tc.dot(VIEW)) * 1.5
+        ,-Math.acos(tc.dot(VIEW)) * tc.distance(VIEW) / 1.5
       );
   }
   
@@ -178,7 +189,7 @@ class GeodesicRender {
   
   public function render(bmp:Bitmap, allowSelect:Bool):Void {
     for (i in 0...8){
-      facLight[i] = facLightPattern[i * 120 + ((ph * (i < 4 ? 1 : 2)) % 120)];
+      facLight[i] = facLightPattern[i * 120 + (ph % 120)];
     }
     
     var lastSelect = select;
@@ -278,11 +289,26 @@ class GeodesicRender {
           bmp.fillRectStyled(p.x, p.y, 1, 2);
         }
       }
+      var alpha = tile.alpha;
+      var moved = (switch (GameState.turned[ti]){
+          case Moved: Sprites.moveds[0];
+          case Skipped: Sprites.moveds[1];
+          case Building: alpha = FM.minI(alpha + buildAlphaPattern[ph], 7); Sprites.moveds[2];
+          case Ready: Sprites.moveds[3];
+          case _: null;
+        });
       bmp.blitAlpha(
-           Sprites.units[unitFac][GameState.unit[ti]].get(tile.alpha, tile.spriteAngle)
+           Sprites.units[unitFac][GameState.unit[ti]].get(alpha, tile.spriteAngle)
           ,tile.spriteX - 24 - FM.floor(tile.spriteOX * (sel ? 5.5 : 2.5))
           ,tile.spriteY - 24 - FM.floor(tile.spriteOY * (sel ? 5.5 : 2.5))
         );
+      if (moved != null){
+        bmp.blitAlpha(
+             moved
+            ,tile.spriteX - 12 - FM.floor(tile.spriteOX * (sel ? 5.5 : 2.5))
+            ,tile.spriteY - 12 - FM.floor(tile.spriteOY * (sel ? 5.5 : 2.5))
+          );
+      }
     }
     
     ph++;
@@ -291,15 +317,9 @@ class GeodesicRender {
     if (lastSelect != select){
       if (lastSelect != null){
         lastSelect.hover = false;
-        for (a in lastSelect.range){
-          a.hover = false;
-        }
       }
       if (select != null){
         select.hover = true;
-        for (a in select.range){
-          a.hover = true;
-        }
       }
     }
   }

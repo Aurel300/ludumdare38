@@ -8,6 +8,16 @@ import sk.thenet.plat.Platform;
 import sk.thenet.stream.bmp.*;
 
 class Geodesic {
+  private static inline function intersect(a:Array<Int>, b:Array<Int>):Array<Int> {
+    var ret = [];
+    for (p in a){
+      if (b.indexOf(p) != -1){
+        ret.push(p);
+      }
+    }
+    return ret;
+  }
+  
   public static function generateIcosahedron(n:Int):Geodesic {
     var phi = 1.618;
     var points = [
@@ -52,15 +62,6 @@ class Geodesic {
           ret.push(l.t);
         } else if (l.t == p){
           ret.push(l.f);
-        }
-      }
-      return ret;
-    }
-    inline function intersect(a:Array<Int>, b:Array<Int>):Array<Int> {
-      var ret = [];
-      for (p in a){
-        if (b.indexOf(p) != -1){
-          ret.push(p);
         }
       }
       return ret;
@@ -218,6 +219,49 @@ class Geodesic {
     }
     
     return new Geodesic(subpoints, subtiles);
+  }
+  
+  public static function getRange(
+    tile:Tile, range:Int, attack:Bool
+  ):Array<Tile> {
+    tile.dist = 0;
+    var queue:Array<Tile> = [tile];
+    var visited:Array<Tile> = [];
+    var ret:Array<Tile> = [];
+    while (queue.length > 0){
+      var qt = queue.shift();
+      visited.push(qt);
+      if (qt.dist != 0){
+        ret.push(qt);
+      }
+      if (qt.dist >= range){
+        continue;
+      }
+      for (a in qt.range){
+        /*
+        if (attack){
+          //
+        } else {
+          if (GameState.unit[a.index] == -1)
+        }
+        */
+        
+        
+        if (!attack && (GameState.unit[a.index] != -1)){
+          continue;
+        }
+        
+        if (visited.indexOf(a) == -1){
+          if (queue.indexOf(a) == -1){
+            a.dist = qt.dist + 1;
+            queue.push(a);
+          } else if (a.dist > qt.dist + 1){
+            a.dist = qt.dist + 1;
+          }
+        }
+      }
+    }
+    return ret;
   }
   
   public var points(default, null):Vector<GeoPoint>;

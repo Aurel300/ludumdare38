@@ -4,8 +4,8 @@ import sk.thenet.bmp.Colour;
 import sk.thenet.geom.Point3DF;
 
 class Tile {
-  public var adjacent(default, null):Array<Tile>;
   public var points  (default, null):Array<Int>;
+  public var adjacent(default, null):Array<Tile>;
   public var range   (default, null):Array<Tile>;
   
   public var index:Int;
@@ -13,7 +13,7 @@ class Tile {
   public var visible:Bool;
   public var pent:Bool;
   public var alpha:Int;
-  //public var banner:Int = -1;
+  public var dist:Int = -1;
   public var sprite:Int = -1;
   public var spriteFaction:Int = -1;
   public var spriteX:Int = -1;
@@ -25,8 +25,8 @@ class Tile {
   public var hover:Bool = false;
   
   public function new(points:Array<Int>){
-    this.adjacent = [];
     this.points   = points;
+    this.adjacent = [];
     this.range    = [];
   }
 }

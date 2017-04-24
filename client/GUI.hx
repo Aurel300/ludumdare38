@@ -11,6 +11,9 @@ import common.*;
 
 class GUI {
   private static inline var ORDER_MAX:Int = 50;
+  private static inline var DRAWER_MAX:Int = 15;
+  private static inline var BUILD_MAX:Int = 60;
+  private static inline var NEXT_MAX:Int = 50;
   
   private static var guiDrawer:Vector<Bitmap>;
   private static var guiDrawerHandle:Vector<Int>;
@@ -20,8 +23,14 @@ class GUI {
   private static var guiDialogEvil:Vector<Bitmap>;
   private static var guiDialogGood:Vector<Bitmap>;
   private static var guiOrders:Vector<Bitmap>;
+  private static var guiBuild:Vector<Bitmap>;
+  private static var guiBuildAreas:Vector<Tooltip>;
+  private static var guiNext:Bitmap;
+  
   private static var fontCounters:Font;
   private static var fontText:Font;
+  private static var fontRed:Font;
+  private static var fontSymbol:Font;
   private static var cameraRotations:Vector<Quaternion>;
   
   private static function renderBubble(
@@ -58,16 +67,16 @@ class GUI {
     return ret;
   }
   
-  private static function renderOrder(
-    am:AssetManager, text:String
+  private static function renderButton(
+    am:AssetManager, text:String, ?type:Int = 0
   ):Bitmap {
     var game = am.getBitmap("game");
     var w = 64;
     var ret = Platform.createBitmap(w, 16, 0);
-    ret.blitAlphaRect(game, 0, 0, 240, 32, 8, 16);
-    ret.setFillPattern((game.fluent >> new Cut(244, 32, 8, 16)).bitmap.toFillPattern());
+    ret.blitAlphaRect(game, 0, 0, 240, 32 + type * 16, 8, 16);
+    ret.setFillPattern((game.fluent >> new Cut(244, 32 + type * 16, 8, 16)).bitmap.toFillPattern());
     ret.fillRectStyled(8, 0, w - 8, 16);
-    ret.blitAlphaRect(game, w - 8, 0, 248, 32, 8, 16);
+    ret.blitAlphaRect(game, w - 8, 0, 248, 32 + type * 16, 8, 16);
     fontText.render(ret, 1, 3, text);
     return ret;
   }
@@ -113,6 +122,28 @@ class GUI {
           ,32
           ,-4, -5
         );
+      fontRed = Font.makeMonospaced(
+           fontRaw >> (new Cut(0, 0, fontRaw.bitmap.width, fontRaw.bitmap.height))
+            << (new Recolour(Palette.pal[18]))
+            << (new Shadow(Palette.pal[5], 1, 0))
+            << (new Glow(Palette.pal[10]))
+          ,32, 160
+          ,10, 18
+          ,32
+          ,-4, -5
+        );
+      fontSymbol = Font.makeMonospaced(
+           am.getBitmap("game").fluent
+            >> (new Cut(0, 0, 192, 32))
+          ,32, 48
+          ,8, 16
+          ,24
+          ,0, 0
+        );
+      fontSymbol.rects[36 * 6 + 4] -= 5;
+      fontSymbol.rects[38 * 6 + 4] -= 5;
+      fontSymbol.rects[40 * 6 + 4] -= 5;
+      fontSymbol.rects[42 * 6 + 4] -= 5;
     };
     
     {
@@ -186,8 +217,74 @@ class GUI {
       // orders
       guiOrders = new Vector(Unit.ORDERS.length);
       for (i in 0...guiOrders.length){
-        guiOrders[i] = renderOrder(am, Unit.ORDERS[i].name);
+        guiOrders[i] = renderButton(am, Unit.ORDERS[i].name);
       }
+    };
+    
+    {
+      // build
+      guiBuild = new Vector(1 + 1 + 8);
+      guiBuildAreas = new Vector(guiBuild.length);
+      guiBuild[0] = renderButton(am, "Cancel");
+      var bg = Platform.createBitmap(Main.HWIDTH, Main.HHEIGHT - 24, 0);
+      bg.blitAlphaRect(game, 0, 0, 192, 56, 8, 8);
+      bg.blitAlphaRect(game, bg.width - 8, 0, 192 + 16, 56, 8, 8);
+      bg.blitAlphaRect(game, 0, bg.height - 8, 192, 56 + 16, 8, 8);
+      bg.blitAlphaRect(game, bg.width - 8, bg.height - 8, 192 + 16, 56 + 16, 8, 8);
+      bg.setFillPattern((game.fluent >> (new Cut(192, 56 + 8, 8, 8))).bitmap.toFillPattern());
+      bg.fillRectStyled(0, 8, 8, bg.height - 16);
+      bg.setFillPattern((game.fluent >> (new Cut(192 + 16, 56 + 8, 8, 8))).bitmap.toFillPattern());
+      bg.fillRectStyled(bg.width - 8, 8, 8, bg.height - 16);
+      bg.setFillPattern((game.fluent >> (new Cut(192 + 8, 56, 8, 8))).bitmap.toFillPattern());
+      bg.fillRectStyled(8, 0, bg.width - 16, 8);
+      bg.setFillPattern((game.fluent >> (new Cut(192 + 8, 56 + 16, 8, 8))).bitmap.toFillPattern());
+      bg.fillRectStyled(8, bg.height - 8, bg.width - 16, 8);
+      bg.fillRect(8, 8, bg.width - 16, bg.height - 16, Palette.pal[7]);
+      var texts:Array<String> = [
+           ""
+          ,"Build units\n(mouse over the units above for\ndetails, click to purchase)"
+          ,"Tower Block ($C2SL 4NRG$A)\nContribute to the greatest\nproject on this planet!\n$DCDNEF$C_$DGH$C_$DIJ$C_$D"
+          ,"Generator ($C10SL 0NRG$A)\nGenerates $C15NRG$A when not\nmoving.\n$DCDNNNNNNNNNNEFNGH$C_$DIJOO"
+          ,"Starlight Catcher ($C15SL 1+1NRG$A)\nCaught $CSL$A is worth\nthree times as much.\n$DCDNNEFNGHOIJO"
+          ,"Boot ($C2SL 1NRG$A)\nBasic footman for melee attacks.\n$DCDNNNNNEFNNGHOOOIJO"
+          ,"Bow and Arrow ($C3SL 1NRG$A)\nRanged, mobile attacker.\n$DCDNNNNEFNNGHOOIJ$C_$D"
+          ,"Trebuchet ($C5SL 2NRG$A)\nArtillery for taking\ndown shields.\n$DCDNEFNGHOOIJO"
+          ,"Stick of Dynamite ($C7SL 5+5NRG$A)\nCannot attack. Deals damage\nto surroundings when attacked.\n$DCDNEFNNGHOOOOOOOOOOIJ$C_$D"
+          ,"Cloak and Dagger ($C10SL 5NRG$A)\nStealthy, nimble backstabber.\nBecomes temporarily invisible\nwhen not moving in owned tiles.\n$DCDNEFNNNGHOOOOOIJ$C_$D"
+        ];
+      guiBuildAreas[1] = {
+           x: (Main.HWIDTH >> 1)
+          ,y: (Main.HHEIGHT >> 1)
+          ,w: Main.HWIDTH
+          ,h: Main.HHEIGHT
+          ,text: ""
+        };
+      for (i in 1...10){
+        if (i > 1){
+          guiBuildAreas[i] = {
+               x: (Main.HWIDTH >> 1) + (i == 2 ? 0 : 32 + (i - 3) * 24)
+              ,y: (Main.HHEIGHT >> 1)
+              ,w: (i == 2 ? 32 : 24)
+              ,h: 32
+              ,text: ""
+            };
+        }
+        guiBuild[i] = Platform.createBitmap(Main.HWIDTH, Main.HHEIGHT, 0);
+        guiBuild[i].blitAlpha(bg, 0, 24);
+        for (j in 0...8){
+          if (j == 0){
+            guiBuild[i].blitAlphaRect(game, 0, (i - 2 == j ? 0 : 2), 0, 96, 32, 32);
+          } else {
+            guiBuild[i].blitAlphaRect(game, 32 + 24 * (j - 1), (i - 2 == j ? 8 : 10), 48 + 24 * (j - 1), 80, 24, 24);
+          }
+        }
+        fontText.render(guiBuild[i], 4, 36, texts[i], 4, 36, [fontText, fontRed, fontCounters, fontSymbol]);
+      }
+    };
+    
+    {
+      // next
+      guiNext = renderButton(am, "Next unit", 1);
     };
     
     return false;
@@ -212,11 +309,16 @@ class GUI {
   private var cacheTooltip:Bitmap;
   private var tooltipLast:Int;
   private var tooltipTime:Int;
-  private var tilesSelected:Array<Int> = [];
   private var ph:Int = 0;
   private var ordersTarget:Int;
   private var ordersPhase:Int;
   private var ordersList:Array<Int>;
+  private var tileSelected:Int;
+  private var buildTarget:Int;
+  private var buildPhase:Int;
+  private var nextTarget:Int;
+  private var nextPhase:Int;
+  private var nextTile:Int;
   
   public function new(app:Application, ico:Geodesic, ren:GeodesicRender){
     allowSelect = true;
@@ -228,14 +330,19 @@ class GUI {
     lastAction = None;
     camera = Quaternion.identity;
     
-    introTime = 0; // 120;
-    drawerTarget = drawerPhase = 15;
+    introTime = 120; // 120;
+    drawerTarget = drawerPhase = 0;
     ordersTarget = ordersPhase = 0;
+    buildTarget = buildPhase = 0;
+    nextTarget = nextPhase = 0;
     ordersList = [];
     setStatus();
     
     tooltipLast = -1;
     tooltipTime = 0;
+    
+    tileSelected = -1;
+    nextTile = -1;
   }
   
   private function cameraTrans(q:Quaternion):Void {
@@ -297,34 +404,38 @@ class GUI {
       // timer
       var y:Int = 0 - 24 + Timing.quadOut.getI(1 - introTime / 60, 24);
       bmp.blitAlpha(guiTimer[ph >> 3], Main.HWIDTH - 16, y);
-      tooltips.push({
+      var tt = {
            x: Main.HWIDTH - 16
           ,y: y
           ,w: 32
           ,h: 24
           ,text: "Time until next turn: 0:12"
-        });
+        };
+      tooltips.push(tt);
+      if (tooltipHover(tt)){
+        hoverAction = NextTurn;
+      }
     };
     
     {
       // counters
       var x:Int = -100 + Timing.quadOut.getI(1 - introTime / 60, 100);
       bmp.blitAlpha(guiCounter, x, 24);
-      fontCounters.render(bmp, x + 13, 24 + 6, "1234");
-      fontCounters.render(bmp, x + 13, 48 + 6, "567/890");
+      fontCounters.render(bmp, x + 13, 24 + 6, "" + GameState.currentSL);
+      fontCounters.render(bmp, x + 13, 48 + 6, GameState.currentNRG + "/" + GameState.maxNRG);
       tooltips.push({
            x: x
           ,y: 24
           ,w: 32
           ,h: 24
-          ,text: "Starlight: 200\nStarlight is ..."
+          ,text: "Starlight: " + GameState.currentSL + "\nStarlight is the main resource.\nIt falls from the sky, having more\nland makes it more likely\nthat you will get it."
         });
       tooltips.push({
            x: x
           ,y: 48
           ,w: 32
           ,h: 24
-          ,text: "Energy: 5 / 10\nEnergy is ..."
+          ,text: "Energy: " + GameState.currentNRG + "/" + GameState.maxNRG + "\nEnergy is generated by Generators.\nIt is needed to maintain your\nland and some of your units."
         });
     };
     
@@ -342,8 +453,7 @@ class GUI {
           };
         tooltips.push(tt);
         var ox:Int = 0;
-        if (FM.withinI(Platform.mouse.x, x, x + 64)
-            && FM.withinI(Platform.mouse.y, tt.y, tt.y + 16)){
+        if (tooltipHover(tt) && ordersPhase == ORDER_MAX){
           ox = -2;
           hoverAction = Order(order);
         }
@@ -366,7 +476,52 @@ class GUI {
     };
     drawerPhase += FM.signI(drawerTarget - drawerPhase);
     
-    allowSelect = (hoverAction == None);
+    {
+      // next
+      var x:Int = Main.WIDTH - Timing.quadOut.getI(nextPhase / NEXT_MAX, 64);
+      var tt = {
+           x: x
+          ,y: Main.HEIGHT - 24 - 24
+          ,w: 64
+          ,h: 16
+          ,text: "Select the next readied unit."
+        };
+      tooltips.push(tt);
+      var ox:Int = 0;
+      if (tooltipHover(tt) && nextPhase == NEXT_MAX){
+        ox = 2;
+        hoverAction = Next;
+      }
+      bmp.blitAlpha(guiNext, x + ox, Main.HEIGHT - 24 - 24);
+    };
+    nextPhase += FM.signI(nextTarget - nextPhase);
+    
+    if (buildPhase != 0){
+      hoverAction = None;
+    }
+    
+    {
+      // build
+      var y:Int = (Main.HHEIGHT >> 1) + (Main.HEIGHT << 1) - Timing.quadOut.getI(buildPhase / BUILD_MAX, (Main.HEIGHT << 1));
+      var disp:Int = 1;
+      if (buildPhase == BUILD_MAX){
+        if (!tooltipHover(guiBuildAreas[1])){
+          hoverAction = BuildExit;
+        } else {
+          for (i in 2...10){
+            if (tooltipHover(guiBuildAreas[i])){
+              disp = i;
+              hoverAction = Build(i - 2);
+              break;
+            }
+          }
+        }
+      }
+      bmp.blitAlpha(guiBuild[disp], Main.WIDTH >> 2, y);
+    };
+    buildPhase += FM.signI(buildTarget - buildPhase);
+    
+    allowSelect = (buildPhase == 0 && hoverAction == None);
     
     action = None;
     if (Platform.mouse.held){
@@ -384,9 +539,7 @@ class GUI {
     {
       var tooltipNow = -1;
       for (ti in 0...tooltips.length){
-        var tooltip = tooltips[ti];
-        if (FM.withinI(Platform.mouse.x, tooltip.x, tooltip.x + tooltip.w)
-            && FM.withinI(Platform.mouse.y, tooltip.y, tooltip.y + tooltip.h)){
+        if (tooltipHover(tooltips[ti])){
           tooltipNow = ti;
           break;
         }
@@ -422,6 +575,7 @@ class GUI {
     
     var cursor:Int = (switch (hoverAction){
         case Rotation(r): 1 + r;
+        case BuildExit: 5;
         case _: 0;
       });
     bmp.blitAlphaRect(
@@ -433,21 +587,30 @@ class GUI {
     ph %= 128;
   }
   
+  private function tooltipHover(tt:Tooltip):Bool {
+    return FM.withinI(Platform.mouse.x, tt.x, tt.x + tt.w)
+        && FM.withinI(Platform.mouse.y, tt.y, tt.y + tt.h);
+  }
+  
   public function setStatus(
     ?unit:Unit, ?stats:Stats, ?unitFac:Int, ?faction:Int
   ):Void {
     cacheDrawer = Platform.createBitmap(256, 24, 0);
     if (unit == null){
+      drawerTarget = 0;
       return;
     }
-    cacheDrawer.fillRect(3, 3, 17, 17, Palette.factions[(unitFac == faction ? 0 : 8) + faction]);
+    drawerTarget = DRAWER_MAX;
+    if (faction != -1){
+      cacheDrawer.fillRect(3, 3, 17, 17, Palette.factions[(unitFac == faction ? 0 : 8) + faction]);
+    }
     cacheDrawer.blitAlpha(Sprites.units[unitFac][unit.sprite].get(0, 0), -12, -12);
     fontText.render(cacheDrawer, 24, 2, unit.name);
     if (stats == null){
       stats = unit.stats;
     }
     var statsIdx = [stats.hp, stats.mp, stats.atk, stats.def];
-    var maxStats = [stats.maxHp, stats.maxMp, stats.atk, stats.def];
+    var maxStats = [stats.maxHp, stats.mp, stats.atk, stats.def];
     var cx = 24 + 2;
     for (i in 0...4){
       cacheDrawer.blitAlphaRect(app.assetManager.getBitmap("game"), cx, 12, 88 + i * 16, 21, 10, 11);
@@ -464,7 +627,7 @@ class GUI {
     }
   }
   
-  public function renderTooltip(text:String):Bitmap {
+  private function renderTooltip(text:String):Bitmap {
     var buffer = Platform.createBitmap(400, 200, 0);
     var max = fontText.render(buffer, 0, 2, text);
     var res = Platform.createBitmap(max.x, max.y - 1, Palette.pal[7]);
@@ -477,22 +640,115 @@ class GUI {
     return res;
   }
   
+  private function nextCheck():Void {
+    var j = (tileSelected == -1 ? 0 : tileSelected + 1);
+    for (i in 0...GameState.TILES){
+      if (   GameState.unit[(i + j) % GameState.TILES] != -1
+          && GameState.unitFac[(i + j) % GameState.TILES] == GameState.currentFaction
+          && GameState.turned[(i + j) % GameState.TILES] == MoveStatus.Ready){
+        nextTile = (i + j) % GameState.TILES;
+        if (nextTile != tileSelected){
+          nextTarget = NEXT_MAX;
+          return;
+        }
+      }
+    }
+    nextTile = -1;
+    nextTarget = 0;
+  }
+  
   public function click():Bool {
-    return (switch (hoverAction){
-        case ToggleDrawer: drawerTarget = 15 - drawerTarget; true;
+    var ret = (switch (hoverAction){
+        case ToggleDrawer:
+        drawerTarget = DRAWER_MAX - drawerTarget;
+        true;
+        
         case Order(o):
-        if (o == 0){
+        switch (Unit.ORDERS[o].type){
+          case Cancel:
+          
+          case Skip:
+          GameState.currentMoves.push(new Move(tileSelected, -1, Skip));
+          GameState.turned[tileSelected] = MoveStatus.Skipped;
+          
+          case Capture:
+          GameState.currentMoves.push(new Move(tileSelected, -1, Capture));
+          GameState.turned[tileSelected] = MoveStatus.Moved;
+          
+          case Shield:
+          
+          case Abandon:
+          
+          case Undo:
+          for (mi in 0...GameState.currentMoves.length){
+            if (GameState.currentMoves[mi].from == tileSelected){
+              GameState.currentMoves.splice(mi, 1);
+              GameState.turned[tileSelected] = MoveStatus.Ready;
+              break;
+            }
+          }
+          
+          case Build:
+          buildTarget = BUILD_MAX;
+          
+          case BuildCancel:
+          GameState.unit[tileSelected] = -1;
+          GameState.unitFac[tileSelected] = -1;
+          GameState.turned[tileSelected] = MoveStatus.None;
           deselectTile();
+          deselectAll();
+          ren.rotate(camera);
+        }
+        if (Unit.ORDERS[o].type != Build){
+          deselectTile();
+          deselectAll();
           ordersTarget = 0;
         }
         true;
+        
+        case BuildExit:
+        buildTarget = 0;
+        true;
+        
+        case Build(o):
+        GameState.unit[tileSelected] = o - 1;
+        GameState.unitFac[tileSelected] = GameState.faction[tileSelected];
+        GameState.turned[tileSelected] = MoveStatus.Building;
+        deselectTile();
+        deselectAll();
+        ren.rotate(camera);
+        ordersTarget = 0;
+        buildTarget = 0;
+        true;
+        
+        case Next:
+        clickTile(nextTile);
+        true;
+        
+        case NextTurn:
+        GameState.turn();
+        ren.rotate(camera);
+        true;
+        
         case _: (tooltipTime != 0);
       });
+    nextCheck();
+    return ret;
   }
   
   public function deselectTile():Void {
-    for (t in tilesSelected){
-      ico.tiles[t].selected = false;
+    if (tileSelected != -1){
+      ico.tiles[tileSelected].selected = false;
+      GameState.currentClicks[tileSelected] = null;
+    }
+    tileSelected = -1;
+    setStatus();
+  }
+  
+  public function deselectAll():Void {
+    for (ti in 0...ico.tiles.length){
+      ico.tiles[ti].selected = false;
+      GameState.currentClicks[ti] = null;
     }
     setStatus();
   }
@@ -501,32 +757,78 @@ class GUI {
     if (t == -1){
       return;
     }
+    var cmd = GameState.currentClicks[t];
+    if (cmd != null){
+      GameState.currentMoves.push(cmd);
+      GameState.turned[cmd.from] = MoveStatus.Moved;
+      deselectTile();
+      deselectAll();
+      ren.scale();
+      ordersTarget = 0;
+      return;
+    }
     deselectTile();
+    deselectAll();
     cameraTrans(ren.lookAt(t).multiply(camera).unit);
+    tileSelected = t;
     ico.tiles[t].selected = true;
+    var tile    = ico.tiles[t];
     var unit    = GameState.unit[t];
     var unitFac = GameState.unitFac[t];
     var faction = GameState.faction[t];
+    var turned  = GameState.turned[t];
     if (unit != -1){
-      setStatus(Unit.UNITS[unit], null, unitFac, faction);
+      setStatus(Unit.UNITS[unit], GameState.stats[t], unitFac, faction);
     }
     if (   faction == GameState.currentFaction
         || unitFac == GameState.currentFaction){
       ordersTarget = ORDER_MAX;
-      ordersList = [];
+      ordersList = [0];
       if (unit != -1 && unitFac == GameState.currentFaction){
-        ordersList = Unit.UNITS[unit].orders;
-        if (faction != GameState.currentFaction){
-          ordersList = ordersList.concat(Unit.AWAY_LAND_ORDERS);
+        switch (turned){
+          case Ready:
+          ordersList.push(1);
+          //ordersList = ordersList.concat(Unit.UNITS[unit].orders);
+          for (t in Geodesic.getRange(tile, Unit.UNITS[unit].stats.mp, false)){
+            t.selected = true;
+            GameState.currentClicks[t.index] = new Move(
+                 tile.index
+                ,t.index
+                ,Movement
+              );
+          }
+          for (t in Geodesic.getRange(tile, Unit.UNITS[unit].stats.ran, true)){
+            if (GameState.unit[t.index] != -1 && GameState.unitFac[t.index] != GameState.currentFaction){
+              t.selected = true;
+              GameState.currentClicks[t.index] = new Move(
+                   tile.index
+                  ,t.index
+                  ,Attack
+                );
+            }
+          }
+          if (faction != GameState.currentFaction){
+            ordersList = ordersList.concat(Unit.AWAY_LAND_ORDERS);
+          }
+          
+          case Building:
+          ordersList.push(7);
+          
+          case Moved | Skipped:
+          ordersList.push(5);
+          
+          case _:
         }
       }
       if (faction == GameState.currentFaction){
         ordersList = ordersList.concat(Unit.HOME_LAND_ORDERS);
+        if (unit == -1){
+          ordersList.push(6);
+        }
       }
     } else {
       ordersTarget = 0;
     }
-    tilesSelected = [t];
   }
 }
 
@@ -535,6 +837,10 @@ private enum GUIAction {
   ToggleDrawer;
   Rotation(r:Int);
   Order(o:Int);
+  NextTurn;
+  Next;
+  BuildExit;
+  Build(o:Int);
 }
 
 typedef Tooltip = {

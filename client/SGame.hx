@@ -16,6 +16,7 @@ class SGame extends State {
   
   override public function to():Void {
     ico = Geodesic.generateIcosahedron(4);
+    GameState.init(ico);
     ren = new GeodesicRender(ico);
     zoomIntro = 0;
     gui = new GUI(app, ico, ren);

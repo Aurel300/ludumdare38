@@ -32,8 +32,6 @@ class Main extends Application {
         ,Mouse
       ]);
     
-    GameState.init();
-    
     preloader = new TNPreloader(this, "game", true);
     addState(new SGame(this));
     mainLoop();

@@ -91,13 +91,13 @@ Column is attacker, line is defender.
 ## Features / TODO ##
 
  - [ ] gameplay system
-   - [.] design
-   - [.] moving
+   - [x] design
+   - [x] moving
    - [ ] building
-   - [ ] attacking
+   - [.] attacking
  - [ ] realtime multiplayer
    - [ ] gamestate
-     - [ ] resolve turns
+     - [.] resolve turns
    - [ ] events
    - [ ] karma
  - [.] visuals
