@@ -77,29 +77,29 @@ Column is attacker, line is defender.
 
 ## Sound fx list ##
 
- - [x] GUI drawers (opening / closing of a drawer? moving stuff on a wooden desk?)
- - [ ] GUI click (mechanical pen click?) (click in / click out separate)
+ - [x] GUI drawer
+ - [ ] GUI click (mechanical pen click?)
  - unit select:
    - [ ] generator ???
-   - [ ] SL catcher
+   - [x] SL catcher
    - [x] boot
    - [x] bow and arrow
    - [x] trebuchet
    - [x] dynamite
    - [x] cloak and dagger
  - unit attack:
-   - [ ] SL catcher
+   - [x] SL catcher
    - [ ] boot
    - [x] bow and arrow
    - [ ] trebuchet
    - [x] dynamite
-   - [ ] cloak and dagger
- - [ ] low time (štrkáč?)
+   - [x] cloak and dagger
+ - [x] low time
  - [ ] unit movement (like in Civ 2)
  - [ ] land captured
  - [x] SL collected (coin sounds?)
  - [x] SL caught from sky
- - [ ] new player spawn = meteorite crash
+ - [x] new player spawn = meteorite crash
  - [ ] invalid action (trying to build without resources)
 
 ## Features / TODO ##
