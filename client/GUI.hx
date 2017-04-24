@@ -6,6 +6,7 @@ import sk.thenet.app.AssetManager;
 import sk.thenet.bmp.*;
 import sk.thenet.bmp.manip.*;
 import sk.thenet.geom.*;
+import sk.thenet.net.ws.Websocket;
 import sk.thenet.plat.Platform;
 import common.*;
 
@@ -27,9 +28,9 @@ class GUI {
   private static var guiBuildAreas:Vector<Tooltip>;
   private static var guiNext:Bitmap;
   
-  private static var fontCounters:Font;
-  private static var fontText:Font;
-  private static var fontRed:Font;
+  public static var fontCounters:Font;
+  public static var fontText:Font;
+  public static var fontRed:Font;
   private static var fontSymbol:Font;
   private static var cameraRotations:Vector<Quaternion>;
   
@@ -295,10 +296,11 @@ class GUI {
   private var app:Application;
   private var ico:Geodesic;
   private var ren:GeodesicRender;
+  private var ws:Websocket;
   private var action:GUIAction;
   private var lastAction:GUIAction;
   private var hoverAction:GUIAction;
-  private var camera:Quaternion;
+  public  var camera:Quaternion;
   private var cameraTransFrom:Quaternion;
   private var cameraTransTo:Quaternion;
   private var cameraTransProgress:Float;
@@ -320,11 +322,14 @@ class GUI {
   private var nextPhase:Int;
   private var nextTile:Int;
   
-  public function new(app:Application, ico:Geodesic, ren:GeodesicRender){
+  public function new(
+    app:Application, ico:Geodesic, ren:GeodesicRender, ws:Websocket
+  ){
     allowSelect = true;
     this.app = app;
     this.ico = ico;
     this.ren = ren;
+    this.ws  = ws;
     
     action = None;
     lastAction = None;
@@ -403,13 +408,18 @@ class GUI {
     {
       // timer
       var y:Int = 0 - 24 + Timing.quadOut.getI(1 - introTime / 60, 24);
-      bmp.blitAlpha(guiTimer[ph >> 3], Main.HWIDTH - 16, y);
+      var until = GameState.untilTicker();
+      var timeSec = until % 60;
+      var timeStr:String = FM.floor(until / 60) + ":" + (timeSec < 10 ? "0" : "") + timeSec;
+      var ph:Int = FM.floor(16 - ((until * 1000) / GameState.period) * 16);
+      ph = FM.clampI(ph, 0, 15);
+      bmp.blitAlpha(guiTimer[ph], Main.HWIDTH - 16, y);
       var tt = {
            x: Main.HWIDTH - 16
           ,y: y
           ,w: 32
           ,h: 24
-          ,text: "Time until next turn: 0:12"
+          ,text: "Time until next turn: " + timeStr
         };
       tooltips.push(tt);
       if (tooltipHover(tt)){
@@ -660,6 +670,7 @@ class GUI {
   public function click():Bool {
     var ret = (switch (hoverAction){
         case ToggleDrawer:
+        app.assetManager.getSound("gui_drawer").play();
         drawerTarget = DRAWER_MAX - drawerTarget;
         true;
         
@@ -670,10 +681,12 @@ class GUI {
           case Skip:
           GameState.currentMoves.push(new Move(tileSelected, -1, Skip));
           GameState.turned[tileSelected] = MoveStatus.Skipped;
+          GameState.encodeTurnSend();
           
           case Capture:
           GameState.currentMoves.push(new Move(tileSelected, -1, Capture));
           GameState.turned[tileSelected] = MoveStatus.Moved;
+          GameState.encodeTurnSend();
           
           case Shield:
           
@@ -684,6 +697,7 @@ class GUI {
             if (GameState.currentMoves[mi].from == tileSelected){
               GameState.currentMoves.splice(mi, 1);
               GameState.turned[tileSelected] = MoveStatus.Ready;
+              GameState.encodeTurnSend();
               break;
             }
           }
@@ -695,6 +709,7 @@ class GUI {
           GameState.unit[tileSelected] = -1;
           GameState.unitFac[tileSelected] = -1;
           GameState.turned[tileSelected] = MoveStatus.None;
+          GameState.encodeTurnSend();
           deselectTile();
           deselectAll();
           ren.rotate(camera);
@@ -714,6 +729,7 @@ class GUI {
         GameState.unit[tileSelected] = o - 1;
         GameState.unitFac[tileSelected] = GameState.faction[tileSelected];
         GameState.turned[tileSelected] = MoveStatus.Building;
+        GameState.encodeTurnSend();
         deselectTile();
         deselectAll();
         ren.rotate(camera);
@@ -761,6 +777,7 @@ class GUI {
     if (cmd != null){
       GameState.currentMoves.push(cmd);
       GameState.turned[cmd.from] = MoveStatus.Moved;
+      GameState.encodeTurnSend();
       deselectTile();
       deselectAll();
       ren.scale();
@@ -785,6 +802,19 @@ class GUI {
       ordersTarget = ORDER_MAX;
       ordersList = [0];
       if (unit != -1 && unitFac == GameState.currentFaction){
+        var soundId = (switch (unit){
+            case 0: "generator_select";
+            case 1: "";
+            case 2: "boot_select";
+            case 3: "bow_select";
+            case 4: "trebuchet_select";
+            case 5: "";
+            case 6: "dagger_select";
+            case _: "";
+          });
+        if (soundId != ""){
+          app.assetManager.getSound(soundId).play();
+        }
         switch (turned){
           case Ready:
           ordersList.push(1);

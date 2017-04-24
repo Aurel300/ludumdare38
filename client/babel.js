@@ -7,6 +7,1644 @@ function $extend(from, fields) {
 	if( fields.toString !== Object.prototype.toString ) proto.toString = fields.toString;
 	return proto;
 }
+var GUI = function(app,ico,ren,ws) {
+	this.ph = 0;
+	this.allowSelect = true;
+	this.app = app;
+	this.ico = ico;
+	this.ren = ren;
+	this.ws = ws;
+	this.action = _$GUI_GUIAction.None;
+	this.lastAction = _$GUI_GUIAction.None;
+	this.camera = sk_thenet_geom_Quaternion.identity;
+	this.introTime = 120;
+	this.drawerTarget = this.drawerPhase = 0;
+	this.ordersTarget = this.ordersPhase = 0;
+	this.buildTarget = this.buildPhase = 0;
+	this.nextTarget = this.nextPhase = 0;
+	this.ordersList = [];
+	this.setStatus();
+	this.tooltipLast = -1;
+	this.tooltipTime = 0;
+	this.tileSelected = -1;
+	this.nextTile = -1;
+};
+GUI.__name__ = true;
+GUI.renderBubble = function(am,c1,c2,width,height,arrow) {
+	if(arrow == null) {
+		arrow = -1;
+	}
+	if(arrow == -1) {
+		arrow = width >> 1;
+	}
+	arrow -= 7;
+	var max = width - 16;
+	if(arrow < 2) {
+		arrow = 2;
+	} else if(arrow > max) {
+		arrow = max;
+	} else {
+		arrow = arrow;
+	}
+	var this1 = new Array(2);
+	var ret = this1;
+	var _g = 0;
+	while(_g < 2) {
+		var i = _g++;
+		var canvas = window.document.createElement("canvas");
+		canvas.width = width;
+		canvas.height = height;
+		var bmp = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas);
+		var width1 = bmp.width;
+		var height1 = bmp.height;
+		if(0 >>> 24 != 255) {
+			bmp.c2d.clearRect(0,0,width1,height1);
+		}
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillRect(0,0,width1,height1);
+		bmp.changed = true;
+		ret[i] = bmp;
+		ret[i].c2d.fillStyle = "rgba(" + (c1 >>> 16 & 255) + "," + (c1 >>> 8 & 255) + "," + (c1 & 255) + "," + (c1 >>> 24) / 255 + ")";
+		ret[i].c2d.fillRect(1,0,width - 2,1);
+		ret[i].c2d.fillRect(0,1,1,height - 8);
+		ret[i].c2d.fillRect(width - 1,1,1,height - 8);
+		var _this = ret[i];
+		var width2 = width - 2;
+		var height2 = height - 8;
+		if(c2 >>> 24 != 255) {
+			_this.c2d.clearRect(1,1,width2,height2);
+		}
+		_this.c2d.fillStyle = "rgba(" + (c2 >>> 16 & 255) + "," + (c2 >>> 8 & 255) + "," + (c2 & 255) + "," + (c2 >>> 24) / 255 + ")";
+		_this.c2d.fillRect(1,1,width2,height2);
+		_this.changed = true;
+		ret[i].c2d.fillStyle = "rgba(" + (c1 >>> 16 & 255) + "," + (c1 >>> 8 & 255) + "," + (c1 & 255) + "," + (c1 >>> 24) / 255 + ")";
+		ret[i].c2d.fillRect(width - 2,2,1,height - 10);
+		ret[i].c2d.fillRect(2,height - 8,width - 3,1);
+		ret[i].c2d.fillRect(1,height - 7,width - 2,1);
+		var canvas1 = window.document.createElement("canvas");
+		canvas1.width = 14;
+		canvas1.height = 8;
+		var bmp1 = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas1);
+		var width3 = bmp1.width;
+		var height3 = bmp1.height;
+		if(0 >>> 24 != 255) {
+			bmp1.c2d.clearRect(0,0,width3,height3);
+		}
+		bmp1.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+		bmp1.c2d.fillRect(0,0,width3,height3);
+		bmp1.changed = true;
+		var arrBmp = bmp1;
+		var this2 = am.getBitmap("game");
+		var this3 = new sk_thenet_bmp_manip_Cut(0,80 + i * 8,14,8).extract(this2);
+		var this4 = this3;
+		new sk_thenet_bmp_manip_Recolour(c1).manipulate(this4);
+		var this5 = this4;
+		var src = this5;
+		arrBmp.c2d.drawImage(src["native"],0,0,src.width,src.height,0,0,src.width,src.height);
+		arrBmp.changed = true;
+		var this6 = am.getBitmap("game");
+		var this7 = new sk_thenet_bmp_manip_Cut(16,80 + i * 8,14,8).extract(this6);
+		var this8 = this7;
+		new sk_thenet_bmp_manip_Recolour(c2).manipulate(this8);
+		var this9 = this8;
+		var src1 = this9;
+		arrBmp.c2d.drawImage(src1["native"],0,0,src1.width,src1.height,0,0,src1.width,src1.height);
+		arrBmp.changed = true;
+		var _this1 = ret[i];
+		_this1.c2d.drawImage(arrBmp["native"],0,0,arrBmp.width,arrBmp.height,arrow,height - 8,arrBmp.width,arrBmp.height);
+		_this1.changed = true;
+	}
+	return ret;
+};
+GUI.renderButton = function(am,text,type) {
+	if(type == null) {
+		type = 0;
+	}
+	var game = am.getBitmap("game");
+	var w = 64;
+	var canvas = window.document.createElement("canvas");
+	canvas.width = w;
+	canvas.height = 16;
+	var bmp = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas);
+	var width = bmp.width;
+	var height = bmp.height;
+	if(0 >>> 24 != 255) {
+		bmp.c2d.clearRect(0,0,width,height);
+	}
+	bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+	bmp.c2d.fillRect(0,0,width,height);
+	bmp.changed = true;
+	var ret = bmp;
+	ret.c2d.drawImage(game["native"],240,32 + type * 16,8,16,0,0,8,16);
+	ret.changed = true;
+	var this1 = game;
+	var this2 = new sk_thenet_bmp_manip_Cut(244,32 + type * 16,8,16).extract(this1);
+	var _this = this2;
+	var pattern = _this.c2d.createPattern(_this["native"],"repeat");
+	ret.c2d.fillStyle = pattern;
+	ret.c2d.fillRect(8,0,w - 8,16);
+	ret.c2d.drawImage(game["native"],248,32 + type * 16,8,16,w - 8,0,8,16);
+	ret.changed = true;
+	GUI.fontText.render(ret,1,3,text);
+	return ret;
+};
+GUI.init = function(am,_) {
+	var game = am.getBitmap("game");
+	var _g = [];
+	var _g1 = 1;
+	while(_g1 < 5) {
+		var i = _g1++;
+		var _this = i >= 2 && i <= 3 ? new sk_thenet_geom_Point3DF(-1,1,0) : new sk_thenet_geom_Point3DF(1,1,0);
+		var factor = 1 / Math.sqrt(_this.x * _this.x + _this.y * _this.y + _this.z * _this.z);
+		_g.push(sk_thenet_geom_Quaternion.axisRotation(new sk_thenet_geom_Point3DF(_this.x * factor,_this.y * factor,_this.z * factor),i % 2 == 0 ? -.06 : .06));
+	}
+	GUI.cameraRotations = _g.slice(0);
+	var this1 = am.getBitmap("console_font");
+	var fontRaw = this1;
+	fontRaw = sk_thenet_bmp_Font.spreadGrid(fontRaw,8,16,1,1,1,1);
+	var this2 = new sk_thenet_bmp_manip_Cut(0,0,fontRaw.width,fontRaw.height).extract(fontRaw);
+	var this3 = this2;
+	new sk_thenet_bmp_manip_Recolour(Palette.pal[7]).manipulate(this3);
+	var this4 = this3;
+	var this5 = this4;
+	new sk_thenet_bmp_manip_Shadow(Palette.pal[5],1,0).manipulate(this5);
+	var this6 = this5;
+	var this7 = this6;
+	new sk_thenet_bmp_manip_Glow(Palette.pal[3]).manipulate(this7);
+	var this8 = this7;
+	GUI.fontCounters = sk_thenet_bmp_Font.makeMonospaced(this8,32,160,10,18,32,-4,0);
+	var this9 = new sk_thenet_bmp_manip_Cut(0,0,fontRaw.width,fontRaw.height).extract(fontRaw);
+	var this10 = this9;
+	new sk_thenet_bmp_manip_Recolour(Palette.pal[6]).manipulate(this10);
+	var this11 = this10;
+	var this12 = this11;
+	new sk_thenet_bmp_manip_Shadow(Palette.pal[5],1,0).manipulate(this12);
+	var this13 = this12;
+	var this14 = this13;
+	new sk_thenet_bmp_manip_Glow(Palette.pal[10]).manipulate(this14);
+	var this15 = this14;
+	GUI.fontText = sk_thenet_bmp_Font.makeMonospaced(this15,32,160,10,18,32,-4,-5);
+	var this16 = new sk_thenet_bmp_manip_Cut(0,0,fontRaw.width,fontRaw.height).extract(fontRaw);
+	var this17 = this16;
+	new sk_thenet_bmp_manip_Recolour(Palette.pal[18]).manipulate(this17);
+	var this18 = this17;
+	var this19 = this18;
+	new sk_thenet_bmp_manip_Shadow(Palette.pal[5],1,0).manipulate(this19);
+	var this20 = this19;
+	var this21 = this20;
+	new sk_thenet_bmp_manip_Glow(Palette.pal[10]).manipulate(this21);
+	var this22 = this21;
+	GUI.fontRed = sk_thenet_bmp_Font.makeMonospaced(this22,32,160,10,18,32,-4,-5);
+	var this23 = am.getBitmap("game");
+	var this24 = new sk_thenet_bmp_manip_Cut(0,0,192,32).extract(this23);
+	GUI.fontSymbol = sk_thenet_bmp_Font.makeMonospaced(this24,32,48,8,16,24,0,0);
+	var _g2 = GUI.fontSymbol.rects;
+	_g2[220] = _g2[220] - 5;
+	var _g3 = GUI.fontSymbol.rects;
+	_g3[232] = _g3[232] - 5;
+	var _g4 = GUI.fontSymbol.rects;
+	_g4[244] = _g4[244] - 5;
+	var _g5 = GUI.fontSymbol.rects;
+	_g5[256] = _g5[256] - 5;
+	var canvas = window.document.createElement("canvas");
+	canvas.width = 400;
+	canvas.height = 24;
+	var bmp = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas);
+	var width = bmp.width;
+	var height = bmp.height;
+	if(0 >>> 24 != 255) {
+		bmp.c2d.clearRect(0,0,width,height);
+	}
+	bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+	bmp.c2d.fillRect(0,0,width,height);
+	bmp.changed = true;
+	GUI.guiKarma = bmp;
+	var _this1 = GUI.guiKarma;
+	_this1.c2d.drawImage(game["native"],32,32,24,24,0,0,24,24);
+	_this1.changed = true;
+	var _g6 = 0;
+	while(_g6 < 44) {
+		var i1 = _g6++;
+		var _this2 = GUI.guiKarma;
+		_this2.c2d.drawImage(game["native"],80,32,8,24,24 + i1 * 8,0,8,24);
+		_this2.changed = true;
+	}
+	var _this3 = GUI.guiKarma;
+	_this3.c2d.drawImage(game["native"],56,32,24,24,376,0,24,24);
+	_this3.changed = true;
+	GUI.guiDialogEvil = GUI.renderBubble(am,Palette.pal[5],Palette.pal[7],192,32,0);
+	GUI.guiDialogGood = GUI.renderBubble(am,Palette.pal[5],Palette.pal[7],192,32,1000);
+	var this25 = new Array(16);
+	GUI.guiDrawer = this25;
+	var this26 = new Array(16);
+	GUI.guiDrawerHandle = this26;
+	var this27 = game;
+	var this28 = new sk_thenet_bmp_manip_Cut(152,32,8,24).extract(this27);
+	var _this4 = this28;
+	var counterBg = _this4.c2d.createPattern(_this4["native"],"repeat");
+	var _g7 = 0;
+	while(_g7 < 16) {
+		var i2 = _g7++;
+		var this29 = GUI.guiDrawer;
+		var canvas1 = window.document.createElement("canvas");
+		canvas1.width = 188;
+		canvas1.height = 24;
+		var bmp1 = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas1);
+		var width1 = bmp1.width;
+		var height1 = bmp1.height;
+		if(0 >>> 24 != 255) {
+			bmp1.c2d.clearRect(0,0,width1,height1);
+		}
+		bmp1.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+		bmp1.c2d.fillRect(0,0,width1,height1);
+		bmp1.changed = true;
+		this29[i2] = bmp1;
+		var _this5 = GUI.guiDrawer[i2];
+		_this5.c2d.drawImage(game["native"],128,32,24,24,0,0,24,24);
+		_this5.changed = true;
+		GUI.guiDrawer[i2].c2d.fillStyle = counterBg;
+		var pos = i2 / 16;
+		var width2 = Math.floor(sk_thenet_anim__$Timing_Timing_$Impl_$.cubicInOut(pos < 0 ? 0 : pos > 1 ? 1 : pos) * 148 + .5);
+		GUI.guiDrawer[i2].c2d.fillRect(24,0,width2,24);
+		var _this6 = GUI.guiDrawer[i2];
+		_this6.c2d.drawImage(game["native"],160 + (i2 < 8 ? 8 : 0),32,8,24,24 + width2,0,8,24);
+		_this6.changed = true;
+		GUI.guiDrawerHandle[i2] = 24 + width2;
+	}
+	var canvas2 = window.document.createElement("canvas");
+	canvas2.width = 16;
+	canvas2.height = 48;
+	var bmp2 = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas2);
+	var width3 = bmp2.width;
+	var height2 = bmp2.height;
+	if(0 >>> 24 != 255) {
+		bmp2.c2d.clearRect(0,0,width3,height2);
+	}
+	bmp2.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+	bmp2.c2d.fillRect(0,0,width3,height2);
+	bmp2.changed = true;
+	GUI.guiCounter = bmp2;
+	var _this7 = GUI.guiCounter;
+	_this7.c2d.drawImage(game["native"],96,32,16,24,0,0,16,24);
+	_this7.changed = true;
+	var _this8 = GUI.guiCounter;
+	_this8.c2d.drawImage(game["native"],112,32,16,24,0,24,16,24);
+	_this8.changed = true;
+	var canvas3 = window.document.createElement("canvas");
+	canvas3.width = 32;
+	canvas3.height = 24;
+	var bmp3 = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas3);
+	var width4 = bmp3.width;
+	var height3 = bmp3.height;
+	if(0 >>> 24 != 255) {
+		bmp3.c2d.clearRect(0,0,width4,height3);
+	}
+	bmp3.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+	bmp3.c2d.fillRect(0,0,width4,height3);
+	bmp3.changed = true;
+	var sun = bmp3;
+	var canvas4 = window.document.createElement("canvas");
+	canvas4.width = 32;
+	canvas4.height = 24;
+	var bmp4 = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas4);
+	var width5 = bmp4.width;
+	var height4 = bmp4.height;
+	if(0 >>> 24 != 255) {
+		bmp4.c2d.clearRect(0,0,width5,height4);
+	}
+	bmp4.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+	bmp4.c2d.fillRect(0,0,width5,height4);
+	bmp4.changed = true;
+	var moon = bmp4;
+	sun.c2d.drawImage(game["native"],176,32,32,24,0,0,32,24);
+	sun.changed = true;
+	moon.c2d.drawImage(game["native"],208,32,32,24,0,0,32,24);
+	moon.changed = true;
+	var this30 = new Array(16);
+	GUI.guiTimer = this30;
+	var _g8 = 0;
+	while(_g8 < 16) {
+		var i3 = _g8++;
+		var this31 = GUI.guiTimer;
+		var canvas5 = window.document.createElement("canvas");
+		canvas5.width = 32;
+		canvas5.height = 24;
+		var bmp5 = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas5);
+		var width6 = bmp5.width;
+		var height5 = bmp5.height;
+		if(0 >>> 24 != 255) {
+			bmp5.c2d.clearRect(0,0,width6,height5);
+		}
+		bmp5.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+		bmp5.c2d.fillRect(0,0,width6,height5);
+		bmp5.changed = true;
+		this31[i3] = bmp5;
+		if(i3 != 15) {
+			var _this9 = GUI.guiTimer[i3];
+			_this9.c2d.drawImage(sun["native"],0,0,sun.width,sun.height,0,0,sun.width,sun.height);
+			_this9.changed = true;
+		}
+		if(i3 == 0) {
+			continue;
+		} else if(i3 == 15) {
+			var _this10 = GUI.guiTimer[i3];
+			_this10.c2d.drawImage(moon["native"],0,0,moon.width,moon.height,0,0,moon.width,moon.height);
+			_this10.changed = true;
+			continue;
+		}
+		var _g11 = 2;
+		while(_g11 < 22) {
+			var y = _g11++;
+			var _this11 = GUI.guiTimer[i3];
+			var srcW = 10 - Math.floor(Math.cos(i3 / 16 * Math.PI) * Math.sin(y / 22 * Math.PI) * 10 + .5);
+			_this11.c2d.drawImage(moon["native"],6,y,srcW,1,6,y,srcW,1);
+			_this11.changed = true;
+		}
+	}
+	var length = common_Unit.ORDERS.length;
+	var this32 = new Array(length);
+	GUI.guiOrders = this32;
+	var _g12 = 0;
+	var _g9 = GUI.guiOrders.length;
+	while(_g12 < _g9) {
+		var i4 = _g12++;
+		GUI.guiOrders[i4] = GUI.renderButton(am,common_Unit.ORDERS[i4].name);
+	}
+	var this33 = new Array(10);
+	GUI.guiBuild = this33;
+	var length1 = GUI.guiBuild.length;
+	var this34 = new Array(length1);
+	GUI.guiBuildAreas = this34;
+	GUI.guiBuild[0] = GUI.renderButton(am,"Cancel");
+	var canvas6 = window.document.createElement("canvas");
+	canvas6.width = 200;
+	canvas6.height = 88;
+	var bmp6 = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas6);
+	var width7 = bmp6.width;
+	var height6 = bmp6.height;
+	if(0 >>> 24 != 255) {
+		bmp6.c2d.clearRect(0,0,width7,height6);
+	}
+	bmp6.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+	bmp6.c2d.fillRect(0,0,width7,height6);
+	bmp6.changed = true;
+	var bg = bmp6;
+	bg.c2d.drawImage(game["native"],192,56,8,8,0,0,8,8);
+	bg.changed = true;
+	bg.c2d.drawImage(game["native"],208,56,8,8,bg.width - 8,0,8,8);
+	bg.changed = true;
+	bg.c2d.drawImage(game["native"],192,72,8,8,0,bg.height - 8,8,8);
+	bg.changed = true;
+	bg.c2d.drawImage(game["native"],208,72,8,8,bg.width - 8,bg.height - 8,8,8);
+	bg.changed = true;
+	var this35 = game;
+	var this36 = new sk_thenet_bmp_manip_Cut(192,64,8,8).extract(this35);
+	var _this12 = this36;
+	var pattern = _this12.c2d.createPattern(_this12["native"],"repeat");
+	bg.c2d.fillStyle = pattern;
+	bg.c2d.fillRect(0,8,8,bg.height - 16);
+	var this37 = game;
+	var this38 = new sk_thenet_bmp_manip_Cut(208,64,8,8).extract(this37);
+	var _this13 = this38;
+	var pattern1 = _this13.c2d.createPattern(_this13["native"],"repeat");
+	bg.c2d.fillStyle = pattern1;
+	bg.c2d.fillRect(bg.width - 8,8,8,bg.height - 16);
+	var this39 = game;
+	var this40 = new sk_thenet_bmp_manip_Cut(200,56,8,8).extract(this39);
+	var _this14 = this40;
+	var pattern2 = _this14.c2d.createPattern(_this14["native"],"repeat");
+	bg.c2d.fillStyle = pattern2;
+	bg.c2d.fillRect(8,0,bg.width - 16,8);
+	var this41 = game;
+	var this42 = new sk_thenet_bmp_manip_Cut(200,72,8,8).extract(this41);
+	var _this15 = this42;
+	var pattern3 = _this15.c2d.createPattern(_this15["native"],"repeat");
+	bg.c2d.fillStyle = pattern3;
+	bg.c2d.fillRect(8,bg.height - 8,bg.width - 16,8);
+	var width8 = bg.width - 16;
+	var height7 = bg.height - 16;
+	var colour = Palette.pal[7];
+	if(colour >>> 24 != 255) {
+		bg.c2d.clearRect(8,8,width8,height7);
+	}
+	bg.c2d.fillStyle = "rgba(" + (colour >>> 16 & 255) + "," + (colour >>> 8 & 255) + "," + (colour & 255) + "," + (colour >>> 24) / 255 + ")";
+	bg.c2d.fillRect(8,8,width8,height7);
+	bg.changed = true;
+	var texts = ["","Build units\n(mouse over the units above for\ndetails, click to purchase)","Tower Block ($C2SL 4NRG$A)\nContribute to the greatest\nproject on this planet!\n$DCDNEF$C_$DGH$C_$DIJ$C_$D","Generator ($C10SL 0NRG$A)\nGenerates $C15NRG$A when not\nmoving.\n$DCDNNNNNNNNNNEFNGH$C_$DIJOO","Starlight Catcher ($C15SL 1+1NRG$A)\nCaught $CSL$A is worth\nthree times as much.\n$DCDNNEFNGHOIJO","Boot ($C2SL 1NRG$A)\nBasic footman for melee attacks.\n$DCDNNNNNEFNNGHOOOIJO","Bow and Arrow ($C3SL 1NRG$A)\nRanged, mobile attacker.\n$DCDNNNNEFNNGHOOIJ$C_$D","Trebuchet ($C5SL 2NRG$A)\nArtillery for taking\ndown shields.\n$DCDNEFNGHOOIJO","Stick of Dynamite ($C7SL 5+5NRG$A)\nCannot attack. Deals damage\nto surroundings when attacked.\n$DCDNEFNNGHOOOOOOOOOOIJ$C_$D","Cloak and Dagger ($C10SL 5NRG$A)\nStealthy, nimble backstabber.\nBecomes temporarily invisible\nwhen not moving in owned tiles.\n$DCDNEFNNNGHOOOOOIJ$C_$D"];
+	GUI.guiBuildAreas[1] = { x : 100, y : 56, w : 200, h : 112, text : ""};
+	var _g10 = 1;
+	while(_g10 < 10) {
+		var i5 = _g10++;
+		if(i5 > 1) {
+			GUI.guiBuildAreas[i5] = { x : 100 + (i5 == 2 ? 0 : 32 + (i5 - 3) * 24), y : 56, w : i5 == 2 ? 32 : 24, h : 32, text : ""};
+		}
+		var this43 = GUI.guiBuild;
+		var canvas7 = window.document.createElement("canvas");
+		canvas7.width = 200;
+		canvas7.height = 112;
+		var bmp7 = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas7);
+		var width9 = bmp7.width;
+		var height8 = bmp7.height;
+		if(0 >>> 24 != 255) {
+			bmp7.c2d.clearRect(0,0,width9,height8);
+		}
+		bmp7.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+		bmp7.c2d.fillRect(0,0,width9,height8);
+		bmp7.changed = true;
+		this43[i5] = bmp7;
+		var _this16 = GUI.guiBuild[i5];
+		_this16.c2d.drawImage(bg["native"],0,0,bg.width,bg.height,0,24,bg.width,bg.height);
+		_this16.changed = true;
+		var _g13 = 0;
+		while(_g13 < 8) {
+			var j = _g13++;
+			if(j == 0) {
+				var _this17 = GUI.guiBuild[i5];
+				_this17.c2d.drawImage(game["native"],0,96,32,32,0,i5 - 2 == j ? 0 : 2,32,32);
+				_this17.changed = true;
+			} else {
+				var _this18 = GUI.guiBuild[i5];
+				_this18.c2d.drawImage(game["native"],48 + 24 * (j - 1),80,24,24,32 + 24 * (j - 1),i5 - 2 == j ? 8 : 10,24,24);
+				_this18.changed = true;
+			}
+		}
+		GUI.fontText.render(GUI.guiBuild[i5],4,36,texts[i5],4,36,[GUI.fontText,GUI.fontRed,GUI.fontCounters,GUI.fontSymbol]);
+	}
+	GUI.guiNext = GUI.renderButton(am,"Next unit",1);
+	return false;
+};
+GUI.prototype = {
+	cameraTrans: function(q) {
+		this.cameraTransFrom = this.camera;
+		this.cameraTransTo = q;
+		this.cameraTransProgress = 0.0;
+	}
+	,render: function(bmp) {
+		var tooltips = [];
+		this.hoverAction = _$GUI_GUIAction.None;
+		if(this.cameraTransTo == null) {
+			var movecursors = [new sk_thenet_geom_Point2DI(60,182),new sk_thenet_geom_Point2DI(340,182),new sk_thenet_geom_Point2DI(60,82),new sk_thenet_geom_Point2DI(340,82)];
+			var _g1 = 0;
+			var _g = movecursors.length;
+			while(_g1 < _g) {
+				var ri = _g1++;
+				var i = movecursors.length - ri - 1;
+				var _this_y;
+				var _this_x;
+				var _this_y1;
+				var _this_x1;
+				var _this_y2;
+				var _this_x2 = sk_thenet_plat_js_canvas_Platform.mouse.x;
+				_this_y2 = sk_thenet_plat_js_canvas_Platform.mouse.y;
+				var other = movecursors[i];
+				_this_x1 = _this_x2 - other.x;
+				_this_y1 = _this_y2 - other.y;
+				_this_x = _this_x1 < 0 ? -_this_x1 : _this_x1;
+				_this_y = _this_y1 < 0 ? -_this_y1 : _this_y1;
+				var dist = _this_x + _this_y;
+				if(dist < 70) {
+					this.hoverAction = _$GUI_GUIAction.Rotation(i);
+				}
+			}
+		} else {
+			if(this.cameraTransProgress >= 1) {
+				this.camera = this.cameraTransTo;
+				this.cameraTransFrom = null;
+				this.cameraTransTo = null;
+			} else {
+				var _this = this.cameraTransFrom;
+				var other1 = this.cameraTransTo;
+				var prog = sk_thenet_anim__$Timing_Timing_$Impl_$.quadInOut(this.cameraTransProgress);
+				var _this_d;
+				var _this_c;
+				var _this_b;
+				var _this_a = _this.a * (1 - prog) + other1.a * prog;
+				_this_b = _this.b * (1 - prog) + other1.b * prog;
+				_this_c = _this.c * (1 - prog) + other1.c * prog;
+				_this_d = _this.d * (1 - prog) + other1.d * prog;
+				var other_d;
+				var other_c;
+				var other_b;
+				var other_a = 1 / Math.sqrt(_this_a * _this_a + _this_b * _this_b + _this_c * _this_c + _this_d * _this_d);
+				other_b = 0;
+				other_c = 0;
+				other_d = 0;
+				this.camera = new sk_thenet_geom_Quaternion(_this_a * other_a - _this_b * other_b - _this_c * other_c - _this_d * other_d,_this_a * other_b + _this_b * other_a + _this_c * other_d - _this_d * other_c,_this_a * other_c - _this_b * other_d + _this_c * other_a + _this_d * other_b,_this_a * other_d + _this_b * other_c - _this_c * other_b + _this_d * other_a);
+			}
+			this.ren.rotate(this.camera);
+			this.cameraTransProgress += .02;
+		}
+		var pos = 1 - this.introTime / 60;
+		var y = 275 - Math.floor(sk_thenet_anim__$Timing_Timing_$Impl_$.quadOut(pos < 0 ? 0 : pos > 1 ? 1 : pos) * 74 + .5);
+		var src = GUI.guiKarma;
+		bmp.c2d.drawImage(src["native"],0,0,src.width,src.height,0,y,src.width,src.height);
+		bmp.changed = true;
+		tooltips.push({ x : 0, y : y, w : 400, h : 24, text : "Your karma is: neutral\nTo improve your karma ..."});
+		var pos1 = 1 - this.introTime / 60;
+		var y1 = -24 + Math.floor(sk_thenet_anim__$Timing_Timing_$Impl_$.quadOut(pos1 < 0 ? 0 : pos1 > 1 ? 1 : pos1) * 24 + .5);
+		var until = common_GameState.untilTicker();
+		var timeSec = until % 60;
+		var timeStr = Math.floor(until / 60) + ":" + (timeSec < 10 ? "0" : "") + timeSec;
+		var ph = Math.floor(16 - until * 1000 / common_GameState.period * 16);
+		if(ph < 0) {
+			ph = 0;
+		} else if(ph > 15) {
+			ph = 15;
+		} else {
+			ph = ph;
+		}
+		var src1 = GUI.guiTimer[ph];
+		bmp.c2d.drawImage(src1["native"],0,0,src1.width,src1.height,184,y1,src1.width,src1.height);
+		bmp.changed = true;
+		var tt = { x : 184, y : y1, w : 32, h : 24, text : "Time until next turn: " + timeStr};
+		tooltips.push(tt);
+		if(this.tooltipHover(tt)) {
+			this.hoverAction = _$GUI_GUIAction.NextTurn;
+		}
+		var pos2 = 1 - this.introTime / 60;
+		var x = -100 + Math.floor(sk_thenet_anim__$Timing_Timing_$Impl_$.quadOut(pos2 < 0 ? 0 : pos2 > 1 ? 1 : pos2) * 100 + .5);
+		var src2 = GUI.guiCounter;
+		bmp.c2d.drawImage(src2["native"],0,0,src2.width,src2.height,x,24,src2.width,src2.height);
+		bmp.changed = true;
+		GUI.fontCounters.render(bmp,x + 13,30,"" + common_GameState.currentSL);
+		GUI.fontCounters.render(bmp,x + 13,54,common_GameState.currentNRG + "/" + common_GameState.maxNRG);
+		tooltips.push({ x : x, y : 24, w : 32, h : 24, text : "Starlight: " + common_GameState.currentSL + "\nStarlight is the main resource.\nIt falls from the sky, having more\nland makes it more likely\nthat you will get it."});
+		tooltips.push({ x : x, y : 48, w : 32, h : 24, text : "Energy: " + common_GameState.currentNRG + "/" + common_GameState.maxNRG + "\nEnergy is generated by Generators.\nIt is needed to maintain your\nland and some of your units."});
+		var pos3 = this.ordersPhase / 50;
+		var x1 = -64 + Math.floor(sk_thenet_anim__$Timing_Timing_$Impl_$.quadOut(pos3 < 0 ? 0 : pos3 > 1 ? 1 : pos3) * 64 + .5);
+		var _g11 = 0;
+		var _g2 = this.ordersList.length;
+		while(_g11 < _g2) {
+			var i1 = _g11++;
+			var order = this.ordersList[i1];
+			var tt1 = { x : x1, y : 177 - i1 * 20, w : 64, h : 16, text : common_Unit.ORDERS[order].tooltip};
+			tooltips.push(tt1);
+			var ox = 0;
+			if(this.tooltipHover(tt1) && this.ordersPhase == 50) {
+				ox = -2;
+				this.hoverAction = _$GUI_GUIAction.Order(order);
+			}
+			var src3 = GUI.guiOrders[order];
+			bmp.c2d.drawImage(src3["native"],0,0,src3.width,src3.height,x1 + ox,177 - i1 * 20,src3.width,src3.height);
+			bmp.changed = true;
+		}
+		var x2 = this.ordersTarget - this.ordersPhase;
+		this.ordersPhase += x2 == 0 ? 0 : x2 < 1 ? -1 : 1;
+		var p = this.drawerPhase;
+		var pos4 = 1 - this.introTime / 60;
+		var y2 = -74 + Math.floor(sk_thenet_anim__$Timing_Timing_$Impl_$.quadOut(pos4 < 0 ? 0 : pos4 > 1 ? 1 : pos4) * 74 + .5);
+		var src4 = GUI.guiDrawer[p];
+		bmp.c2d.drawImage(src4["native"],0,0,src4.width,src4.height,0,y2,src4.width,src4.height);
+		bmp.changed = true;
+		var srcW = GUI.guiDrawerHandle[p];
+		bmp.c2d.drawImage(this.cacheDrawer["native"],0,0,srcW,24,0,0,srcW,24);
+		bmp.changed = true;
+		if(sk_thenet_plat_js_canvas_Platform.mouse.y < y2 + 24 && sk_thenet_plat_js_canvas_Platform.mouse.x >= GUI.guiDrawerHandle[p] && sk_thenet_plat_js_canvas_Platform.mouse.x < GUI.guiDrawerHandle[p] + 8) {
+			this.hoverAction = _$GUI_GUIAction.ToggleDrawer;
+		}
+		var x3 = this.drawerTarget - this.drawerPhase;
+		this.drawerPhase += x3 == 0 ? 0 : x3 < 1 ? -1 : 1;
+		var pos5 = this.nextPhase / 50;
+		var x4 = 400 - Math.floor(sk_thenet_anim__$Timing_Timing_$Impl_$.quadOut(pos5 < 0 ? 0 : pos5 > 1 ? 1 : pos5) * 64 + .5);
+		var tt2 = { x : x4, y : 177, w : 64, h : 16, text : "Select the next readied unit."};
+		tooltips.push(tt2);
+		var ox1 = 0;
+		if(this.tooltipHover(tt2) && this.nextPhase == 50) {
+			ox1 = 2;
+			this.hoverAction = _$GUI_GUIAction.Next;
+		}
+		var src5 = GUI.guiNext;
+		bmp.c2d.drawImage(src5["native"],0,0,src5.width,src5.height,x4 + ox1,177,src5.width,src5.height);
+		bmp.changed = true;
+		var x5 = this.nextTarget - this.nextPhase;
+		this.nextPhase += x5 == 0 ? 0 : x5 < 1 ? -1 : 1;
+		if(this.buildPhase != 0) {
+			this.hoverAction = _$GUI_GUIAction.None;
+		}
+		var pos6 = this.buildPhase / 60;
+		var y3 = 506 - Math.floor(sk_thenet_anim__$Timing_Timing_$Impl_$.quadOut(pos6 < 0 ? 0 : pos6 > 1 ? 1 : pos6) * 450 + .5);
+		var disp = 1;
+		if(this.buildPhase == 60) {
+			if(!this.tooltipHover(GUI.guiBuildAreas[1])) {
+				this.hoverAction = _$GUI_GUIAction.BuildExit;
+			} else {
+				var _g3 = 2;
+				while(_g3 < 10) {
+					var i2 = _g3++;
+					if(this.tooltipHover(GUI.guiBuildAreas[i2])) {
+						disp = i2;
+						this.hoverAction = _$GUI_GUIAction.Build(i2 - 2);
+						break;
+					}
+				}
+			}
+		}
+		var src6 = GUI.guiBuild[disp];
+		bmp.c2d.drawImage(src6["native"],0,0,src6.width,src6.height,100,y3,src6.width,src6.height);
+		bmp.changed = true;
+		var x6 = this.buildTarget - this.buildPhase;
+		this.buildPhase += x6 == 0 ? 0 : x6 < 1 ? -1 : 1;
+		this.allowSelect = this.buildPhase == 0 && this.hoverAction == _$GUI_GUIAction.None;
+		this.action = _$GUI_GUIAction.None;
+		if(sk_thenet_plat_js_canvas_Platform.mouse.held) {
+			this.action = this.hoverAction;
+		}
+		var _g4 = this.action;
+		if(_g4[1] == 2) {
+			var r = _g4[2];
+			var _this_d1;
+			var _this_c1;
+			var _this_b1;
+			var _this_a1;
+			var _this1 = GUI.cameraRotations[r];
+			var other2 = this.camera;
+			_this_a1 = _this1.a * other2.a - _this1.b * other2.b - _this1.c * other2.c - _this1.d * other2.d;
+			_this_b1 = _this1.a * other2.b + _this1.b * other2.a + _this1.c * other2.d - _this1.d * other2.c;
+			_this_c1 = _this1.a * other2.c - _this1.b * other2.d + _this1.c * other2.a + _this1.d * other2.b;
+			_this_d1 = _this1.a * other2.d + _this1.b * other2.c - _this1.c * other2.b + _this1.d * other2.a;
+			var other_d1;
+			var other_c1;
+			var other_b1;
+			var other_a1 = 1 / Math.sqrt(_this_a1 * _this_a1 + _this_b1 * _this_b1 + _this_c1 * _this_c1 + _this_d1 * _this_d1);
+			other_b1 = 0;
+			other_c1 = 0;
+			other_d1 = 0;
+			this.camera = new sk_thenet_geom_Quaternion(_this_a1 * other_a1 - _this_b1 * other_b1 - _this_c1 * other_c1 - _this_d1 * other_d1,_this_a1 * other_b1 + _this_b1 * other_a1 + _this_c1 * other_d1 - _this_d1 * other_c1,_this_a1 * other_c1 - _this_b1 * other_d1 + _this_c1 * other_a1 + _this_d1 * other_b1,_this_a1 * other_d1 + _this_b1 * other_c1 - _this_c1 * other_b1 + _this_d1 * other_a1);
+			this.ren.rotate(this.camera);
+		}
+		var tooltipNow = -1;
+		var _g21 = 0;
+		var _g12 = tooltips.length;
+		while(_g21 < _g12) {
+			var ti = _g21++;
+			if(this.tooltipHover(tooltips[ti])) {
+				tooltipNow = ti;
+				break;
+			}
+		}
+		if(tooltipNow == this.tooltipLast) {
+			if(tooltipNow != -1) {
+				this.tooltipTime++;
+			} else {
+				this.tooltipTime = 0;
+			}
+		} else {
+			this.tooltipTime = 0;
+		}
+		this.tooltipLast = tooltipNow;
+		if(this.tooltipTime == 70) {
+			this.cacheTooltip = this.renderTooltip(tooltips[tooltipNow].text);
+		}
+		if(this.tooltipTime >= 70) {
+			var x7 = sk_thenet_plat_js_canvas_Platform.mouse.x + 4;
+			var max = 400 - this.cacheTooltip.width;
+			var ttx = x7 < 0 ? 0 : x7 > max ? max : x7;
+			var x8 = sk_thenet_plat_js_canvas_Platform.mouse.y + 4;
+			var max1 = 225 - this.cacheTooltip.height;
+			var tty = x8 < 0 ? 0 : x8 > max1 ? max1 : x8;
+			var src7 = this.cacheTooltip;
+			bmp.c2d.drawImage(src7["native"],0,0,src7.width,src7.height,ttx,tty,src7.width,src7.height);
+			bmp.changed = true;
+		}
+		if(this.introTime > 0) {
+			this.introTime--;
+		}
+		var cursor;
+		var _g13 = this.hoverAction;
+		switch(_g13[1]) {
+		case 2:
+			var r1 = _g13[2];
+			cursor = 1 + r1;
+			break;
+		case 6:
+			cursor = 5;
+			break;
+		default:
+			cursor = 0;
+		}
+		var src8 = this.app.assetManager.getBitmap("game");
+		bmp.c2d.drawImage(src8["native"],32 + cursor * 8,24,8,8,sk_thenet_plat_js_canvas_Platform.mouse.x,sk_thenet_plat_js_canvas_Platform.mouse.y,8,8);
+		bmp.changed = true;
+		this.ph++;
+		this.ph %= 128;
+	}
+	,tooltipHover: function(tt) {
+		var x = sk_thenet_plat_js_canvas_Platform.mouse.x;
+		if(x >= tt.x && x <= tt.x + tt.w) {
+			var x1 = sk_thenet_plat_js_canvas_Platform.mouse.y;
+			if(x1 >= tt.y) {
+				return x1 <= tt.y + tt.h;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+	,setStatus: function(unit,stats,unitFac,faction) {
+		var canvas = window.document.createElement("canvas");
+		canvas.width = 256;
+		canvas.height = 24;
+		var bmp = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas);
+		var width = bmp.width;
+		var height = bmp.height;
+		if(0 >>> 24 != 255) {
+			bmp.c2d.clearRect(0,0,width,height);
+		}
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillRect(0,0,width,height);
+		bmp.changed = true;
+		this.cacheDrawer = bmp;
+		if(unit == null) {
+			this.drawerTarget = 0;
+			return;
+		}
+		this.drawerTarget = 15;
+		if(faction != -1) {
+			var _this = this.cacheDrawer;
+			var colour = Palette.factions[(unitFac == faction ? 0 : 8) + faction];
+			if(colour >>> 24 != 255) {
+				_this.c2d.clearRect(3,3,17,17);
+			}
+			_this.c2d.fillStyle = "rgba(" + (colour >>> 16 & 255) + "," + (colour >>> 8 & 255) + "," + (colour & 255) + "," + (colour >>> 24) / 255 + ")";
+			_this.c2d.fillRect(3,3,17,17);
+			_this.changed = true;
+		}
+		var _this1 = this.cacheDrawer;
+		var this1 = Sprites.units[unitFac][unit.sprite];
+		var angle = 0;
+		while(angle < 0) angle += Math.PI * 2;
+		var angles = Math.floor(this1.length >> 3);
+		var di = angle / (Math.PI * 2) * angles;
+		var df = di - Math.floor(di);
+		var dc = Math.ceil(di) - di;
+		var src = this1[0 * angles + (df <= dc ? Math.floor(di) : Math.ceil(di)) % angles];
+		_this1.c2d.drawImage(src["native"],0,0,src.width,src.height,-12,-12,src.width,src.height);
+		_this1.changed = true;
+		GUI.fontText.render(this.cacheDrawer,24,2,unit.name);
+		if(stats == null) {
+			stats = unit.stats;
+		}
+		var statsIdx = [stats.hp,stats.mp,stats.atk,stats.def];
+		var maxStats = [stats.maxHp,stats.mp,stats.atk,stats.def];
+		var cx = 26;
+		var _g = 0;
+		while(_g < 4) {
+			var i = _g++;
+			var _this2 = this.cacheDrawer;
+			var src1 = this.app.assetManager.getBitmap("game");
+			_this2.c2d.drawImage(src1["native"],88 + i * 16,21,10,11,cx,12,10,11);
+			_this2.changed = true;
+			cx += 11;
+			var _g2 = 0;
+			var _g1 = statsIdx[i];
+			while(_g2 < _g1) {
+				var j = _g2++;
+				var _this3 = this.cacheDrawer;
+				var src2 = this.app.assetManager.getBitmap("game");
+				_this3.c2d.drawImage(src2["native"],160 + (i > 1 ? 8 : 0) + (j == 0 ? 0 : 1),21,5,11,cx,12,5,11);
+				_this3.changed = true;
+				cx += 4 - (j == 0 ? 0 : 1);
+			}
+			var _g21 = statsIdx[i];
+			var _g11 = maxStats[i];
+			while(_g21 < _g11) {
+				var j1 = _g21++;
+				var _this4 = this.cacheDrawer;
+				var src3 = this.app.assetManager.getBitmap("game");
+				_this4.c2d.drawImage(src3["native"],152 + (j1 == 0 ? 0 : 1),21,5,11,cx,12,5,11);
+				_this4.changed = true;
+				cx += 4 - (j1 == 0 ? 0 : 1);
+			}
+			cx += 4;
+		}
+	}
+	,renderTooltip: function(text) {
+		var canvas = window.document.createElement("canvas");
+		canvas.width = 400;
+		canvas.height = 200;
+		var bmp = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas);
+		var width = bmp.width;
+		var height = bmp.height;
+		if(0 >>> 24 != 255) {
+			bmp.c2d.clearRect(0,0,width,height);
+		}
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillRect(0,0,width,height);
+		bmp.changed = true;
+		var buffer = bmp;
+		var max = GUI.fontText.render(buffer,0,2,text);
+		var width1 = max.x;
+		var height1 = max.y - 1;
+		var colour = Palette.pal[7];
+		var canvas1 = window.document.createElement("canvas");
+		canvas1.width = width1;
+		canvas1.height = height1;
+		var bmp1 = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas1);
+		var width2 = bmp1.width;
+		var height2 = bmp1.height;
+		if(colour >>> 24 != 255) {
+			bmp1.c2d.clearRect(0,0,width2,height2);
+		}
+		bmp1.c2d.fillStyle = "rgba(" + (colour >>> 16 & 255) + "," + (colour >>> 8 & 255) + "," + (colour & 255) + "," + (colour >>> 24) / 255 + ")";
+		bmp1.c2d.fillRect(0,0,width2,height2);
+		bmp1.changed = true;
+		var res = bmp1;
+		var c = Palette.pal[4];
+		res.c2d.fillStyle = "rgba(" + (c >>> 16 & 255) + "," + (c >>> 8 & 255) + "," + (c & 255) + "," + (c >>> 24) / 255 + ")";
+		res.c2d.fillRect(0,0,res.width,1);
+		res.c2d.fillRect(0,0,1,res.height);
+		res.c2d.fillRect(0,res.height - 1,res.width,1);
+		res.c2d.fillRect(res.width - 1,0,1,res.height);
+		var srcW = max.x;
+		var srcH = max.y;
+		res.c2d.drawImage(buffer["native"],0,0,srcW,srcH,0,0,srcW,srcH);
+		res.changed = true;
+		return res;
+	}
+	,nextCheck: function() {
+		var j = this.tileSelected == -1 ? 0 : this.tileSelected + 1;
+		var _g = 0;
+		while(_g < 320) {
+			var i = _g++;
+			if(common_GameState.unit[(i + j) % 320] != -1 && common_GameState.unitFac[(i + j) % 320] == common_GameState.currentFaction && common_GameState.turned[(i + j) % 320] == 1) {
+				this.nextTile = (i + j) % 320;
+				if(this.nextTile != this.tileSelected) {
+					this.nextTarget = 50;
+					return;
+				}
+			}
+		}
+		this.nextTile = -1;
+		this.nextTarget = 0;
+	}
+	,click: function() {
+		var ret;
+		var _g = this.hoverAction;
+		switch(_g[1]) {
+		case 1:
+			this.app.assetManager.getSound("gui_drawer").play();
+			this.drawerTarget = 15 - this.drawerTarget;
+			ret = true;
+			break;
+		case 3:
+			var o = _g[2];
+			var _g1 = common_Unit.ORDERS[o].type;
+			switch(_g1[1]) {
+			case 0:
+				break;
+			case 1:
+				common_GameState.currentMoves.push(new common_Move(this.tileSelected,-1,3));
+				common_GameState.turned[this.tileSelected] = 3;
+				common_GameState.encodeTurnSend();
+				break;
+			case 2:
+				common_GameState.currentMoves.push(new common_Move(this.tileSelected,-1,2));
+				common_GameState.turned[this.tileSelected] = 2;
+				common_GameState.encodeTurnSend();
+				break;
+			case 3:
+				break;
+			case 4:
+				break;
+			case 5:
+				var _g11 = 0;
+				var _g2 = common_GameState.currentMoves.length;
+				while(_g11 < _g2) {
+					var mi = _g11++;
+					if(common_GameState.currentMoves[mi].from == this.tileSelected) {
+						common_GameState.currentMoves.splice(mi,1);
+						common_GameState.turned[this.tileSelected] = 1;
+						common_GameState.encodeTurnSend();
+						break;
+					}
+				}
+				break;
+			case 6:
+				this.buildTarget = 60;
+				break;
+			case 7:
+				common_GameState.unit[this.tileSelected] = -1;
+				common_GameState.unitFac[this.tileSelected] = -1;
+				common_GameState.turned[this.tileSelected] = 0;
+				common_GameState.encodeTurnSend();
+				this.deselectTile();
+				this.deselectAll();
+				this.ren.rotate(this.camera);
+				break;
+			}
+			if(common_Unit.ORDERS[o].type != common_OrderType.Build) {
+				this.deselectTile();
+				this.deselectAll();
+				this.ordersTarget = 0;
+			}
+			ret = true;
+			break;
+		case 4:
+			common_GameState.turn();
+			this.ren.rotate(this.camera);
+			ret = true;
+			break;
+		case 5:
+			this.clickTile(this.nextTile);
+			ret = true;
+			break;
+		case 6:
+			this.buildTarget = 0;
+			ret = true;
+			break;
+		case 7:
+			var o1 = _g[2];
+			common_GameState.unit[this.tileSelected] = o1 - 1;
+			common_GameState.unitFac[this.tileSelected] = common_GameState.faction[this.tileSelected];
+			common_GameState.turned[this.tileSelected] = 4;
+			common_GameState.encodeTurnSend();
+			this.deselectTile();
+			this.deselectAll();
+			this.ren.rotate(this.camera);
+			this.ordersTarget = 0;
+			this.buildTarget = 0;
+			ret = true;
+			break;
+		default:
+			ret = this.tooltipTime != 0;
+		}
+		this.nextCheck();
+		return ret;
+	}
+	,deselectTile: function() {
+		if(this.tileSelected != -1) {
+			this.ico.tiles[this.tileSelected].selected = false;
+			common_GameState.currentClicks[this.tileSelected] = null;
+		}
+		this.tileSelected = -1;
+		this.setStatus();
+	}
+	,deselectAll: function() {
+		var _g1 = 0;
+		var _g = this.ico.tiles.length;
+		while(_g1 < _g) {
+			var ti = _g1++;
+			this.ico.tiles[ti].selected = false;
+			common_GameState.currentClicks[ti] = null;
+		}
+		this.setStatus();
+	}
+	,clickTile: function(t) {
+		if(t == -1) {
+			return;
+		}
+		var cmd = common_GameState.currentClicks[t];
+		if(cmd != null) {
+			common_GameState.currentMoves.push(cmd);
+			common_GameState.turned[cmd.from] = 2;
+			common_GameState.encodeTurnSend();
+			this.deselectTile();
+			this.deselectAll();
+			this.ren.scale();
+			this.ordersTarget = 0;
+			return;
+		}
+		this.deselectTile();
+		this.deselectAll();
+		var _this_d;
+		var _this_c;
+		var _this_b;
+		var _this_a;
+		var _this = this.ren.lookAt(t);
+		var other = this.camera;
+		_this_a = _this.a * other.a - _this.b * other.b - _this.c * other.c - _this.d * other.d;
+		_this_b = _this.a * other.b + _this.b * other.a + _this.c * other.d - _this.d * other.c;
+		_this_c = _this.a * other.c - _this.b * other.d + _this.c * other.a + _this.d * other.b;
+		_this_d = _this.a * other.d + _this.b * other.c - _this.c * other.b + _this.d * other.a;
+		var other_d;
+		var other_c;
+		var other_b;
+		var other_a = 1 / Math.sqrt(_this_a * _this_a + _this_b * _this_b + _this_c * _this_c + _this_d * _this_d);
+		other_b = 0;
+		other_c = 0;
+		other_d = 0;
+		this.cameraTrans(new sk_thenet_geom_Quaternion(_this_a * other_a - _this_b * other_b - _this_c * other_c - _this_d * other_d,_this_a * other_b + _this_b * other_a + _this_c * other_d - _this_d * other_c,_this_a * other_c - _this_b * other_d + _this_c * other_a + _this_d * other_b,_this_a * other_d + _this_b * other_c - _this_c * other_b + _this_d * other_a));
+		this.tileSelected = t;
+		this.ico.tiles[t].selected = true;
+		var tile = this.ico.tiles[t];
+		var unit = common_GameState.unit[t];
+		var unitFac = common_GameState.unitFac[t];
+		var faction = common_GameState.faction[t];
+		var turned = common_GameState.turned[t];
+		if(unit != -1) {
+			this.setStatus(common_Unit.UNITS[unit],common_GameState.stats[t],unitFac,faction);
+		}
+		if(faction == common_GameState.currentFaction || unitFac == common_GameState.currentFaction) {
+			this.ordersTarget = 50;
+			this.ordersList = [0];
+			if(unit != -1 && unitFac == common_GameState.currentFaction) {
+				var soundId;
+				switch(unit) {
+				case 0:
+					soundId = "generator_select";
+					break;
+				case 1:
+					soundId = "";
+					break;
+				case 2:
+					soundId = "boot_select";
+					break;
+				case 3:
+					soundId = "bow_select";
+					break;
+				case 4:
+					soundId = "trebuchet_select";
+					break;
+				case 5:
+					soundId = "";
+					break;
+				case 6:
+					soundId = "dagger_select";
+					break;
+				default:
+					soundId = "";
+				}
+				if(soundId != "") {
+					this.app.assetManager.getSound(soundId).play();
+				}
+				switch(turned) {
+				case 1:
+					this.ordersList.push(1);
+					var _g = 0;
+					var _g1 = common_Geodesic.getRange(tile,common_Unit.UNITS[unit].stats.mp,false);
+					while(_g < _g1.length) {
+						var t1 = _g1[_g];
+						++_g;
+						t1.selected = true;
+						common_GameState.currentClicks[t1.index] = new common_Move(tile.index,t1.index,0);
+					}
+					var _g2 = 0;
+					var _g11 = common_Geodesic.getRange(tile,common_Unit.UNITS[unit].stats.ran,true);
+					while(_g2 < _g11.length) {
+						var t2 = _g11[_g2];
+						++_g2;
+						if(common_GameState.unit[t2.index] != -1 && common_GameState.unitFac[t2.index] != common_GameState.currentFaction) {
+							t2.selected = true;
+							common_GameState.currentClicks[t2.index] = new common_Move(tile.index,t2.index,1);
+						}
+					}
+					if(faction != common_GameState.currentFaction) {
+						this.ordersList = this.ordersList.concat(common_Unit.AWAY_LAND_ORDERS);
+					}
+					break;
+				case 2:case 3:
+					this.ordersList.push(5);
+					break;
+				case 4:
+					this.ordersList.push(7);
+					break;
+				default:
+				}
+			}
+			if(faction == common_GameState.currentFaction) {
+				this.ordersList = this.ordersList.concat(common_Unit.HOME_LAND_ORDERS);
+				if(unit == -1) {
+					this.ordersList.push(6);
+				}
+			}
+		} else {
+			this.ordersTarget = 0;
+		}
+	}
+	,__class__: GUI
+};
+var _$GUI_GUIAction = { __ename__ : true, __constructs__ : ["None","ToggleDrawer","Rotation","Order","NextTurn","Next","BuildExit","Build"] };
+_$GUI_GUIAction.None = ["None",0];
+_$GUI_GUIAction.None.toString = $estr;
+_$GUI_GUIAction.None.__enum__ = _$GUI_GUIAction;
+_$GUI_GUIAction.ToggleDrawer = ["ToggleDrawer",1];
+_$GUI_GUIAction.ToggleDrawer.toString = $estr;
+_$GUI_GUIAction.ToggleDrawer.__enum__ = _$GUI_GUIAction;
+_$GUI_GUIAction.Rotation = function(r) { var $x = ["Rotation",2,r]; $x.__enum__ = _$GUI_GUIAction; $x.toString = $estr; return $x; };
+_$GUI_GUIAction.Order = function(o) { var $x = ["Order",3,o]; $x.__enum__ = _$GUI_GUIAction; $x.toString = $estr; return $x; };
+_$GUI_GUIAction.NextTurn = ["NextTurn",4];
+_$GUI_GUIAction.NextTurn.toString = $estr;
+_$GUI_GUIAction.NextTurn.__enum__ = _$GUI_GUIAction;
+_$GUI_GUIAction.Next = ["Next",5];
+_$GUI_GUIAction.Next.toString = $estr;
+_$GUI_GUIAction.Next.__enum__ = _$GUI_GUIAction;
+_$GUI_GUIAction.BuildExit = ["BuildExit",6];
+_$GUI_GUIAction.BuildExit.toString = $estr;
+_$GUI_GUIAction.BuildExit.__enum__ = _$GUI_GUIAction;
+_$GUI_GUIAction.Build = function(o) { var $x = ["Build",7,o]; $x.__enum__ = _$GUI_GUIAction; $x.toString = $estr; return $x; };
+var sk_thenet_geom_Point2DI = function(x,y) {
+	this.x = x;
+	this.y = y;
+};
+sk_thenet_geom_Point2DI.__name__ = true;
+sk_thenet_geom_Point2DI.prototype = {
+	__class__: sk_thenet_geom_Point2DI
+};
+var sk_thenet_geom_Point3DF = function(x,y,z) {
+	this.x = x;
+	this.y = y;
+	this.z = z;
+};
+sk_thenet_geom_Point3DF.__name__ = true;
+sk_thenet_geom_Point3DF.prototype = {
+	__class__: sk_thenet_geom_Point3DF
+};
+Math.__name__ = true;
+var GeodesicRender = function(ico) {
+	this.ph = 0;
+	this.lastScale = 1;
+	this.stVisible = 0;
+	this.ptVisible = 0;
+	this.points = ico.points;
+	this.tiles = ico.tiles;
+	var length = this.points.length;
+	var this1 = new Array(length);
+	this.rpoints = this1;
+	var length1 = this.points.length;
+	var this2 = new Array(length1);
+	this.ppoints = this2;
+	var length2 = this.points.length;
+	var this3 = new Array(length2);
+	this.upoints = this3;
+	var length3 = this.tiles.length;
+	var this4 = new Array(length3);
+	this.ptiles = this4;
+	var length4 = this.tiles.length;
+	var this5 = new Array(length4);
+	this.stiles = this5;
+	this.select = this.tiles[35];
+	var length5 = Palette.facPatterns.length;
+	var this6 = new Array(length5);
+	this.facLight = this6;
+	var _g = [];
+	var _g1 = 0;
+	while(_g1 < 8) {
+		var i = _g1++;
+		var _g2 = 0;
+		while(_g2 < 120) {
+			var j = _g2++;
+			_g.push(Math.floor(4 * Math.sin((j + i * 45) / 120 * Math.PI * 2)));
+		}
+	}
+	this.facLightPattern = _g.slice(0);
+	var _g11 = [];
+	var _g21 = 0;
+	while(_g21 < 120) {
+		var i1 = _g21++;
+		_g11.push(Math.cos(i1 / 120 * Math.PI * 2));
+	}
+	this.spriteOffsetPattern = _g11.slice(0);
+	var _g22 = [];
+	var _g3 = 0;
+	while(_g3 < 120) {
+		var i2 = _g3++;
+		_g22.push(Math.floor((Math.cos(i2 / 120 * Math.PI * 2) + 1) * 4));
+	}
+	this.buildAlphaPattern = _g22.slice(0);
+	this.rotate(sk_thenet_geom_Quaternion.identity);
+};
+GeodesicRender.__name__ = true;
+GeodesicRender.prototype = {
+	rotate: function(q,doScale) {
+		if(doScale == null) {
+			doScale = true;
+		}
+		var rpVisible = 0;
+		var _g = 0;
+		var _g1 = this.points;
+		while(_g < _g1.length) {
+			var p = _g1[_g];
+			++_g;
+			var _this_z;
+			var _this_y;
+			var _this_x;
+			var _this_d;
+			var _this_c;
+			var _this_b;
+			var _this_a;
+			var _this_d1;
+			var _this_c1;
+			var _this_b1;
+			var _this_a1;
+			var other_d;
+			var other_c;
+			var other_b;
+			var other_a = 0;
+			other_b = p.x;
+			other_c = p.y;
+			other_d = p.z;
+			_this_a1 = q.a * other_a - q.b * other_b - q.c * other_c - q.d * other_d;
+			_this_b1 = q.a * other_b + q.b * other_a + q.c * other_d - q.d * other_c;
+			_this_c1 = q.a * other_c - q.b * other_d + q.c * other_a + q.d * other_b;
+			_this_d1 = q.a * other_d + q.b * other_c - q.c * other_b + q.d * other_a;
+			var other_d1;
+			var other_c1;
+			var other_b1;
+			var other_a1;
+			var _this_d2;
+			var _this_c2;
+			var _this_b2;
+			var _this_a2 = q.a;
+			_this_b2 = -q.b;
+			_this_c2 = -q.c;
+			_this_d2 = -q.d;
+			var other_d2;
+			var other_c2;
+			var other_b2;
+			var other_a2 = 1 / (Math.sqrt(q.a * q.a + q.b * q.b + q.c * q.c + q.d * q.d) * Math.sqrt(q.a * q.a + q.b * q.b + q.c * q.c + q.d * q.d));
+			other_b2 = 0;
+			other_c2 = 0;
+			other_d2 = 0;
+			other_a1 = _this_a2 * other_a2 - _this_b2 * other_b2 - _this_c2 * other_c2 - _this_d2 * other_d2;
+			other_b1 = _this_a2 * other_b2 + _this_b2 * other_a2 + _this_c2 * other_d2 - _this_d2 * other_c2;
+			other_c1 = _this_a2 * other_c2 - _this_b2 * other_d2 + _this_c2 * other_a2 + _this_d2 * other_b2;
+			other_d1 = _this_a2 * other_d2 + _this_b2 * other_c2 - _this_c2 * other_b2 + _this_d2 * other_a2;
+			_this_a = _this_a1 * other_a1 - _this_b1 * other_b1 - _this_c1 * other_c1 - _this_d1 * other_d1;
+			_this_b = _this_a1 * other_b1 + _this_b1 * other_a1 + _this_c1 * other_d1 - _this_d1 * other_c1;
+			_this_c = _this_a1 * other_c1 - _this_b1 * other_d1 + _this_c1 * other_a1 + _this_d1 * other_b1;
+			_this_d = _this_a1 * other_d1 + _this_b1 * other_c1 - _this_c1 * other_b1 + _this_d1 * other_a1;
+			_this_x = _this_b;
+			_this_y = _this_c;
+			_this_z = _this_d;
+			var factor = .7 + .5 * common_GameState.height[rpVisible];
+			this.rpoints[rpVisible] = common_GeoPoint.ofPoint(new sk_thenet_geom_Point3DF(_this_x * factor,_this_y * factor,_this_z * factor));
+			++rpVisible;
+		}
+		if(doScale) {
+			this.scale(this.lastScale);
+		}
+	}
+	,scale: function(scale) {
+		if(scale != null) {
+			this.lastScale = scale;
+		} else {
+			scale = this.lastScale;
+		}
+		var ppVisible = 0;
+		var _g = 0;
+		var _g1 = this.rpoints;
+		while(_g < _g1.length) {
+			var p = _g1[_g];
+			++_g;
+			this.ppoints[ppVisible] = new sk_thenet_geom_Point2DI(Math.floor(p.x * scale + 200),Math.floor(p.y * scale * GeodesicRender.Y_SCALE + 112 + GeodesicRender.Y_OFFSET));
+			var scale1 = scale * 1.03;
+			this.upoints[ppVisible] = new sk_thenet_geom_Point2DI(Math.floor(p.x * scale1 + 200),Math.floor(p.y * scale1 * GeodesicRender.Y_SCALE + 112 + GeodesicRender.Y_OFFSET));
+			++ppVisible;
+		}
+		this.ptVisible = 0;
+		var stilesP = [];
+		var _g2 = 0;
+		var _g11 = this.tiles;
+		while(_g2 < _g11.length) {
+			var t = _g11[_g2];
+			++_g2;
+			var area = 0;
+			var visible = false;
+			if(this.rpoints[t.points[0]].z >= -.2 && (this.ppoints[t.points[0]].y < 225 || this.ppoints[t.points[1]].y < 225 || this.ppoints[t.points[2]].y < 225) && (this.ppoints[t.points[0]].x < 400 || this.ppoints[t.points[1]].x < 400 || this.ppoints[t.points[2]].x < 400) && (this.ppoints[t.points[0]].x >= 0 || this.ppoints[t.points[1]].x >= 0 || this.ppoints[t.points[2]].x >= 0)) {
+				var p1 = this.ppoints[t.points[0]];
+				var p2 = this.ppoints[t.points[1]];
+				var p3 = this.ppoints[t.points[2]];
+				area = p1.x * p2.y + p2.x * p3.y + p3.x * p1.y - p2.x * p1.y - p3.x * p2.y - p1.x * p3.y;
+				visible = area > 0;
+			}
+			if(visible) {
+				this.ptiles[this.ptVisible++] = t;
+				var y = 7 - Math.floor(area * 2.6 / scale);
+				t.alpha = 0 > y ? 0 : y;
+				var ti = t.index;
+				var faction = common_GameState.faction[ti];
+				var tmp;
+				if(faction != -1) {
+					var y1 = Math.floor(area * 1.3 / scale);
+					if(15 < y1) {
+						tmp = 15;
+					} else {
+						tmp = y1;
+					}
+				} else {
+					var x = Palette.patterns.length - 1;
+					var y2 = Math.floor(area * 4 / scale) + (t.pent ? 5 : 0);
+					var y3 = (49 < y2 ? 49 : y2) + (t.alpha >> 1) * 50;
+					if(x < y3) {
+						tmp = x;
+					} else {
+						tmp = y3;
+					}
+				}
+				t.colour = tmp;
+				if(common_GameState.unit[ti] != -1) {
+					t.spriteX = Math.floor((this.ppoints[t.points[0]].x + this.ppoints[t.points[1]].x + this.ppoints[t.points[2]].x) / 3);
+					t.spriteY = Math.floor((this.ppoints[t.points[0]].y + this.ppoints[t.points[1]].y + this.ppoints[t.points[2]].y) / 3);
+					var oangle = Math.atan2(205 - t.spriteY,200 - t.spriteX);
+					t.spriteOX = Math.cos(oangle) * 4;
+					t.spriteOY = Math.sin(oangle) * 4;
+					t.spriteAngle = Math.atan2(265 - t.spriteY,200 - t.spriteX) - Math.PI * .5;
+					stilesP.push(t);
+				}
+			}
+		}
+		stilesP.sort($bind(this,this.zSortTile));
+		this.stVisible = 0;
+		var _g3 = 0;
+		while(_g3 < stilesP.length) {
+			var t1 = stilesP[_g3];
+			++_g3;
+			this.stiles[this.stVisible++] = t1;
+		}
+	}
+	,getTileCenter: function(ti) {
+		var _this_z;
+		var _this_y;
+		var _this_x = (this.rpoints[this.tiles[ti].points[0]].x + this.rpoints[this.tiles[ti].points[1]].x + this.rpoints[this.tiles[ti].points[2]].x) / 3;
+		_this_y = (this.rpoints[this.tiles[ti].points[0]].y + this.rpoints[this.tiles[ti].points[1]].y + this.rpoints[this.tiles[ti].points[2]].y) / 3;
+		_this_z = (this.rpoints[this.tiles[ti].points[0]].z + this.rpoints[this.tiles[ti].points[1]].z + this.rpoints[this.tiles[ti].points[2]].z) / 3;
+		var factor = 1 / Math.sqrt(_this_x * _this_x + _this_y * _this_y + _this_z * _this_z);
+		return new sk_thenet_geom_Point3DF(_this_x * factor,_this_y * factor,_this_z * factor);
+	}
+	,lookAt: function(ti) {
+		var tc = this.getTileCenter(ti);
+		var _this = GeodesicRender.VIEW;
+		var tmp = new sk_thenet_geom_Point3DF(_this.y * tc.z - _this.z * tc.y,_this.z * tc.x - _this.x * tc.z,_this.x * tc.y - _this.y * tc.x);
+		var other = GeodesicRender.VIEW;
+		var other1 = GeodesicRender.VIEW;
+		var _this_z;
+		var _this_y;
+		var _this_x = tc.x - other1.x;
+		_this_y = tc.y - other1.y;
+		_this_z = tc.z - other1.z;
+		return sk_thenet_geom_Quaternion.axisRotation(tmp,-Math.acos(tc.x * other.x + tc.y * other.y + tc.z * other.z) * Math.sqrt(_this_x * _this_x + _this_y * _this_y + _this_z * _this_z) / 1.5);
+	}
+	,zSortTile: function(a,b) {
+		var _this_y;
+		var _this_x = b.spriteX;
+		_this_y = b.spriteY;
+		var other = GeodesicRender.CENTER;
+		var x = other.x - _this_x;
+		var x1 = other.y - _this_y;
+		var _this_y1;
+		var _this_x1 = a.spriteX;
+		_this_y1 = a.spriteY;
+		var other1 = GeodesicRender.CENTER;
+		var x2 = other1.x - _this_x1;
+		var x3 = other1.y - _this_y1;
+		return (x ^ x >> 31) - (x >> 31) + ((x1 ^ x1 >> 31) - (x1 >> 31)) - ((x2 ^ x2 >> 31) - (x2 >> 31) + ((x3 ^ x3 >> 31) - (x3 >> 31)));
+	}
+	,render: function(bmp,allowSelect) {
+		var _gthis = this;
+		var _g = 0;
+		while(_g < 8) {
+			var i = _g++;
+			this.facLight[i] = this.facLightPattern[i * 120 + this.ph % 120];
+		}
+		var lastSelect = this.select;
+		this.select = null;
+		var _g1 = 0;
+		var _g2 = this.ptVisible;
+		while(_g1 < _g2) {
+			var rti = _g1++;
+			var tile = this.ptiles[rti];
+			var ti = tile.index;
+			var sel = tile.selected || tile.hover;
+			var faction = common_GameState.faction[ti];
+			var ly = -1;
+			var txmin = 399;
+			var txmax = 0;
+			var c = tile.colour;
+			if(tile.hover) {
+				c += faction == -1 ? 5 : 1;
+			}
+			if(tile.selected) {
+				if(faction == -1) {
+					c += 10 + this.facLight[0];
+					if(c >= 50) {
+						c = 49;
+					}
+				} else {
+					c += 1 + this.facLight[faction];
+					if(c >= 15) {
+						c = 14;
+					}
+				}
+			}
+			bmp.c2d.fillStyle = faction != -1 ? Palette.facPatterns[faction][c] : Palette.patterns[c];
+			var p = faction == -1 ? new TopDownBresenhams(this.ppoints[tile.points[0]],this.ppoints[tile.points[1]],this.ppoints[tile.points[2]]) : new TopDownBresenhams(this.upoints[tile.points[0]],this.upoints[tile.points[1]],this.upoints[tile.points[2]]);
+			while(p.hasNext()) {
+				var p1 = p.next();
+				if(p1.y != ly && ly != -1) {
+					if(txmax >= txmin) {
+						var tmp;
+						if(allowSelect && sk_thenet_plat_js_canvas_Platform.mouse.y == ly) {
+							var x = sk_thenet_plat_js_canvas_Platform.mouse.x;
+							if(x >= txmin) {
+								tmp = x <= txmax;
+							} else {
+								tmp = false;
+							}
+						} else {
+							tmp = false;
+						}
+						if(tmp) {
+							_gthis.select = tile;
+						}
+						bmp.c2d.fillRect(txmin,ly,txmax - txmin,1);
+					}
+					txmin = 399;
+					txmax = 0;
+				}
+				if(txmin > p1.x) {
+					txmin = p1.x;
+				}
+				if(txmax < p1.x) {
+					txmax = p1.x;
+				}
+				ly = p1.y;
+			}
+			if(ly != -1) {
+				if(txmax >= txmin) {
+					var tmp1;
+					if(allowSelect && sk_thenet_plat_js_canvas_Platform.mouse.y == ly) {
+						var x1 = sk_thenet_plat_js_canvas_Platform.mouse.x;
+						if(x1 >= txmin) {
+							tmp1 = x1 <= txmax;
+						} else {
+							tmp1 = false;
+						}
+					} else {
+						tmp1 = false;
+					}
+					if(tmp1) {
+						_gthis.select = tile;
+					}
+					bmp.c2d.fillRect(txmin,ly,txmax - txmin,1);
+				}
+				txmin = 399;
+				txmax = 0;
+			}
+		}
+		var _g11 = 0;
+		var _g3 = this.stVisible;
+		while(_g11 < _g3) {
+			var rti1 = _g11++;
+			var tile1 = this.stiles[rti1];
+			var ti1 = tile1.index;
+			var sel1 = tile1.selected;
+			var unitFac = common_GameState.unitFac[ti1];
+			var pin = new sk_thenet_stream_bmp_Bresenham(new sk_thenet_geom_Point2DI(tile1.spriteX,tile1.spriteY),new sk_thenet_geom_Point2DI(tile1.spriteX - Math.floor(tile1.spriteOX * (sel1 ? 5 : 2)),tile1.spriteY - Math.floor(tile1.spriteOY * (sel1 ? 5 : 2))));
+			var c1 = Palette.factions[8 + unitFac];
+			bmp.c2d.fillStyle = "rgba(" + (c1 >>> 16 & 255) + "," + (c1 >>> 8 & 255) + "," + (c1 & 255) + "," + (c1 >>> 24) / 255 + ")";
+			if(pin.yLong) {
+				var _g21 = pin;
+				while(_g21.continueFunc()) {
+					var p2 = _g21.streamFunc();
+					bmp.c2d.fillRect(p2.x,p2.y,2,1);
+				}
+			} else {
+				var _g22 = pin;
+				while(_g22.continueFunc()) {
+					var p3 = _g22.streamFunc();
+					bmp.c2d.fillRect(p3.x,p3.y,1,2);
+				}
+			}
+			var alpha = tile1.alpha;
+			var moved;
+			var _g23 = common_GameState.turned[ti1];
+			switch(_g23) {
+			case 1:
+				moved = Sprites.moveds[3];
+				break;
+			case 2:
+				moved = Sprites.moveds[0];
+				break;
+			case 3:
+				moved = Sprites.moveds[1];
+				break;
+			case 4:
+				var x2 = alpha + this.buildAlphaPattern[this.ph];
+				if(x2 < 7) {
+					alpha = x2;
+				} else {
+					alpha = 7;
+				}
+				moved = Sprites.moveds[2];
+				break;
+			default:
+				moved = null;
+			}
+			var this1 = Sprites.units[unitFac][common_GameState.unit[ti1]];
+			var angle = tile1.spriteAngle;
+			while(angle < 0) angle += Math.PI * 2;
+			var angles = Math.floor(this1.length >> 3);
+			var di = angle / (Math.PI * 2) * angles;
+			var df = di - Math.floor(di);
+			var dc = Math.ceil(di) - di;
+			var src = this1[alpha * angles + (df <= dc ? Math.floor(di) : Math.ceil(di)) % angles];
+			bmp.c2d.drawImage(src["native"],0,0,src.width,src.height,tile1.spriteX - 24 - Math.floor(tile1.spriteOX * (sel1 ? 5.5 : 2.5)),tile1.spriteY - 24 - Math.floor(tile1.spriteOY * (sel1 ? 5.5 : 2.5)),src.width,src.height);
+			bmp.changed = true;
+			if(moved != null && common_GameState.unitFac[ti1] == common_GameState.currentFaction) {
+				bmp.c2d.drawImage(moved["native"],0,0,moved.width,moved.height,tile1.spriteX - 12 - Math.floor(tile1.spriteOX * (sel1 ? 5.5 : 2.5)),tile1.spriteY - 12 - Math.floor(tile1.spriteOY * (sel1 ? 5.5 : 2.5)),moved.width,moved.height);
+				bmp.changed = true;
+			}
+		}
+		this.ph++;
+		this.ph %= 120;
+		if(lastSelect != this.select) {
+			if(lastSelect != null) {
+				lastSelect.hover = false;
+			}
+			if(this.select != null) {
+				this.select.hover = true;
+			}
+		}
+	}
+	,click: function() {
+		if(this.select != null) {
+			this.ph = 0;
+			return this.select.index;
+		}
+		return -1;
+	}
+	,__class__: GeodesicRender
+};
+var TopDownBresenhams = function(p1,p2,p3) {
+	this.b1 = sk_thenet_stream_bmp_Bresenham.getTopDown(p1,p2);
+	this.b2 = sk_thenet_stream_bmp_Bresenham.getTopDown(p2,p3);
+	this.b3 = sk_thenet_stream_bmp_Bresenham.getTopDown(p3,p1);
+};
+TopDownBresenhams.__name__ = true;
+TopDownBresenhams.prototype = {
+	hasNext: function() {
+		if(!(this.f1 != null || this.b1.continueFunc() || (this.f2 != null || this.b2.continueFunc()))) {
+			if(this.f3 == null) {
+				return this.b3.continueFunc();
+			} else {
+				return true;
+			}
+		} else {
+			return true;
+		}
+	}
+	,next: function() {
+		if(this.f1 == null && this.b1.continueFunc()) {
+			this.f1 = this.b1.streamFunc();
+		}
+		if(this.f2 == null && this.b2.continueFunc()) {
+			this.f2 = this.b2.streamFunc();
+		}
+		if(this.f3 == null && this.b3.continueFunc()) {
+			this.f3 = this.b3.streamFunc();
+		}
+		var ret = null;
+		if(this.f1 == null) {
+			if(this.f2 == null) {
+				ret = this.f3;
+				this.f3 = null;
+				return ret;
+			}
+			if(this.f3 == null) {
+				ret = this.f2;
+				this.f2 = null;
+				return ret;
+			}
+		}
+		if(this.f2 == null) {
+			if(this.f1 == null) {
+				ret = this.f3;
+				this.f3 = null;
+				return ret;
+			}
+			if(this.f3 == null) {
+				ret = this.f1;
+				this.f1 = null;
+				return ret;
+			}
+		}
+		if(this.f3 == null) {
+			if(this.f2 == null) {
+				ret = this.f1;
+				this.f1 = null;
+				return ret;
+			}
+			if(this.f1 == null) {
+				ret = this.f2;
+				this.f2 = null;
+				return ret;
+			}
+		}
+		if(this.f1 != null && ((this.f2 == null || this.f1.y <= this.f2.y) && (this.f3 == null || this.f1.y <= this.f3.y))) {
+			ret = this.f1;
+			this.f1 = null;
+		} else if(this.f2 != null && (this.f3 == null || this.f2.y <= this.f3.y)) {
+			ret = this.f2;
+			this.f2 = null;
+		} else {
+			ret = this.f3;
+			this.f3 = null;
+		}
+		return ret;
+	}
+	,__class__: TopDownBresenhams
+};
 var HxOverrides = function() { };
 HxOverrides.__name__ = true;
 HxOverrides.cca = function(s,index) {
@@ -27,6 +1665,14 @@ HxOverrides.substr = function(s,pos,len) {
 		}
 	}
 	return s.substr(pos,len);
+};
+HxOverrides.remove = function(a,obj) {
+	var i = a.indexOf(obj);
+	if(i == -1) {
+		return false;
+	}
+	a.splice(i,1);
+	return true;
 };
 var sk_thenet_fsm_Memory = function() { };
 sk_thenet_fsm_Memory.__name__ = true;
@@ -238,7 +1884,7 @@ sk_thenet_app_Application.prototype = {
 	,__class__: sk_thenet_app_Application
 };
 var Main = function() {
-	sk_thenet_app_Application.call(this,[sk_thenet_app_ApplicationInit.Assets([sk_thenet_plat_js_canvas_app_Embed.getBitmap("game","png/game.png"),new sk_thenet_app_asset_Trigger("pal",["game"],Palette.init),new sk_thenet_app_asset_Bind(["game","pal"],Sprites.init)]),sk_thenet_app_ApplicationInit.Framerate(60),sk_thenet_app_ApplicationInit.Surface(400,225,1),sk_thenet_app_ApplicationInit.Keyboard,sk_thenet_app_ApplicationInit.Mouse]);
+	sk_thenet_app_Application.call(this,[sk_thenet_app_ApplicationInit.Assets([sk_thenet_plat_js_canvas_app_Embed.getBitmap("game","png/game.png"),sk_thenet_plat_js_canvas_app_Embed.getBitmap("console_font","png/font.png"),sk_thenet_plat_js_canvas_app_Embed.getSound("boot_select","wav/Boot_Select.wav"),sk_thenet_plat_js_canvas_app_Embed.getSound("bow_attack","wav/Bow_Attack.wav"),sk_thenet_plat_js_canvas_app_Embed.getSound("bow_select","wav/Bow_Select.wav"),sk_thenet_plat_js_canvas_app_Embed.getSound("dagger_select","wav/Dagger_Select.wav"),sk_thenet_plat_js_canvas_app_Embed.getSound("generator_select","wav/Generator_Select.wav"),sk_thenet_plat_js_canvas_app_Embed.getSound("gui_drawer","wav/GUI_Drawer_Open.wav"),sk_thenet_plat_js_canvas_app_Embed.getSound("trebuchet_select","wav/Trebuchet_Select_Final.wav"),new sk_thenet_app_asset_Trigger("pal",["game"],Palette.init),new sk_thenet_app_asset_Trigger("sprites",["game","pal"],Sprites.init),new sk_thenet_app_asset_Bind(["game","pal","console_font","sprites"],GUI.init)]),sk_thenet_app_ApplicationInit.Console,sk_thenet_app_ApplicationInit.Framerate(60),sk_thenet_app_ApplicationInit.Surface(400,225,1),sk_thenet_app_ApplicationInit.Keyboard,sk_thenet_app_ApplicationInit.Mouse]);
 	this.preloader = new sk_thenet_app_TNPreloader(this,"game",true);
 	this.addState(new SGame(this));
 	this.mainLoop();
@@ -253,16 +1899,16 @@ Main.__super__ = sk_thenet_app_Application;
 Main.prototype = $extend(sk_thenet_app_Application.prototype,{
 	__class__: Main
 });
-Math.__name__ = true;
 var Palette = function() { };
 Palette.__name__ = true;
 Palette.init = function(am,_) {
 	var raw = am.getBitmap("game");
 	var _g = [];
 	var _g1 = 0;
-	while(_g1 < 8) {
+	while(_g1 < 24) {
 		var i = _g1++;
-		var x = i * 8;
+		var x = i % 8 * 8;
+		var y = (i >> 3) * 8;
 		if(raw.changed) {
 			var data8 = raw.c2d.getImageData(0,0,raw.width,raw.height).data;
 			var j = 0;
@@ -276,7 +1922,7 @@ Palette.init = function(am,_) {
 			}
 			raw.changed = false;
 		}
-		_g.push(!(x >= 0 && x <= raw.width - 1) || 0 > raw.height - 1 ? 0 : raw.data[x + 0 * raw.width]);
+		_g.push(!(x >= 0 && x <= raw.width - 1) || !(y >= 0 && y <= raw.height - 1) ? 0 : raw.data[x + y * raw.width]);
 	}
 	Palette.pal = _g.slice(0);
 	var _g12 = [];
@@ -297,33 +1943,33 @@ Palette.init = function(am,_) {
 			if(colour >>> 24 != 255) {
 				bmp.c2d.clearRect(0,0,width,height);
 			}
-			bmp.c2d.fillStyle = "rgba(" + (colour >>> 16 & 255) + ", " + (colour >>> 8 & 255) + ", " + (colour & 255) + ", " + (colour >>> 24) / 255 + ")";
+			bmp.c2d.fillStyle = "rgba(" + (colour >>> 16 & 255) + "," + (colour >>> 8 & 255) + "," + (colour & 255) + "," + (colour >>> 24) / 255 + ")";
 			bmp.c2d.fillRect(0,0,width,height);
 			bmp.changed = true;
 			var p = bmp;
 			var di = 0;
 			var _g5 = 0;
 			while(_g5 < 4) {
-				var y = _g5++;
+				var y1 = _g5++;
 				var _g6 = 0;
 				while(_g6 < 4) {
 					var x1 = _g6++;
 					if(i2 % 7 != 0 && sk_thenet_bmp_OrderedDither.BAYER_4[di++] < i2 % 7 * 2) {
 						var colour1 = Palette.pal[Math.floor(i2 / 7) + 1];
 						if(colour1 >>> 24 != 255) {
-							p.c2d.clearRect(x1,y,1,1);
+							p.c2d.clearRect(x1,y1,1,1);
 						}
-						p.c2d.fillStyle = "rgba(" + (colour1 >>> 16 & 255) + ", " + (colour1 >>> 8 & 255) + ", " + (colour1 & 255) + ", " + (colour1 >>> 24) / 255 + ")";
-						p.c2d.fillRect(x1,y,1,1);
+						p.c2d.fillStyle = "rgba(" + (colour1 >>> 16 & 255) + "," + (colour1 >>> 8 & 255) + "," + (colour1 & 255) + "," + (colour1 >>> 24) / 255 + ")";
+						p.c2d.fillRect(x1,y1,1,1);
 						p.changed = true;
 						p.changed = true;
 					}
-					if((x1 + y) % a != 0) {
+					if((x1 + y1) % a != 0) {
 						if(0 >>> 24 != 255) {
-							p.c2d.clearRect(x1,y,1,1);
+							p.c2d.clearRect(x1,y1,1,1);
 						}
-						p.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
-						p.c2d.fillRect(x1,y,1,1);
+						p.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+						p.c2d.fillRect(x1,y1,1,1);
 						p.changed = true;
 						p.changed = true;
 					}
@@ -338,7 +1984,7 @@ Palette.init = function(am,_) {
 	while(_g31 < 16) {
 		var i3 = _g31++;
 		var x2 = i3 % 8 * 8;
-		var y1 = (i3 >> 3) * 8 + 8;
+		var y2 = (i3 >> 3) * 8 + 8;
 		if(raw.changed) {
 			var data81 = raw.c2d.getImageData(0,0,raw.width,raw.height).data;
 			var j1 = 0;
@@ -352,7 +1998,7 @@ Palette.init = function(am,_) {
 			}
 			raw.changed = false;
 		}
-		_g22.push(!(x2 >= 0 && x2 <= raw.width - 1) || !(y1 >= 0 && y1 <= raw.height - 1) ? 0 : raw.data[x2 + y1 * raw.width]);
+		_g22.push(!(x2 >= 0 && x2 <= raw.width - 1) || !(y2 >= 0 && y2 <= raw.height - 1) ? 0 : raw.data[x2 + y2 * raw.width]);
 	}
 	Palette.factions = _g22.slice(0);
 	var _g32 = [];
@@ -392,29 +2038,28 @@ Palette.init = function(am,_) {
 			if(base >>> 24 != 255) {
 				bmp1.c2d.clearRect(0,0,width1,height1);
 			}
-			bmp1.c2d.fillStyle = "rgba(" + (base >>> 16 & 255) + ", " + (base >>> 8 & 255) + ", " + (base & 255) + ", " + (base >>> 24) / 255 + ")";
+			bmp1.c2d.fillStyle = "rgba(" + (base >>> 16 & 255) + "," + (base >>> 8 & 255) + "," + (base & 255) + "," + (base >>> 24) / 255 + ")";
 			bmp1.c2d.fillRect(0,0,width1,height1);
 			bmp1.changed = true;
 			var p1 = bmp1;
 			var di1 = 0;
 			var _g10 = 0;
 			while(_g10 < 4) {
-				var y2 = _g10++;
+				var y3 = _g10++;
 				var _g111 = 0;
 				while(_g111 < 4) {
 					var x3 = _g111++;
 					if(i5 % 7 != 0 && sk_thenet_bmp_OrderedDither.BAYER_4[di1++] < i5 % 7 * 2) {
 						if(next >>> 24 != 255) {
-							p1.c2d.clearRect(x3,y2,1,1);
+							p1.c2d.clearRect(x3,y3,1,1);
 						}
-						p1.c2d.fillStyle = "rgba(" + (next >>> 16 & 255) + ", " + (next >>> 8 & 255) + ", " + (next & 255) + ", " + (next >>> 24) / 255 + ")";
-						p1.c2d.fillRect(x3,y2,1,1);
+						p1.c2d.fillStyle = "rgba(" + (next >>> 16 & 255) + "," + (next >>> 8 & 255) + "," + (next & 255) + "," + (next >>> 24) / 255 + ")";
+						p1.c2d.fillRect(x3,y3,1,1);
 						p1.changed = true;
 						p1.changed = true;
 					}
 				}
 			}
-			p1.debug();
 			_g51.push(p1.c2d.createPattern(p1["native"],"repeat"));
 		}
 		_g32.push(_g51.slice(0));
@@ -452,15 +2097,55 @@ sk_thenet_app_State.prototype = {
 	,__class__: sk_thenet_app_State
 };
 var SGame = function(app) {
+	this.wsStatus = ServerStatus.None;
 	sk_thenet_app_State.call(this,"game",app);
 };
 SGame.__name__ = true;
 SGame.__super__ = sk_thenet_app_State;
 SGame.prototype = $extend(sk_thenet_app_State.prototype,{
 	to: function() {
+		var _gthis = this;
 		this.ico = common_Geodesic.generateIcosahedron(4);
-		this.zoomIntro = 0;
-		this.camera = sk_thenet_geom_Quaternion.identity;
+		common_GameState.initEmpty(this.ico);
+		this.ws = new sk_thenet_plat_js_common_net_ws_Websocket();
+		this.ws.listen("data",$bind(this,this.handleData));
+		this.ws.connect("localhost","/",7738);
+		common_GameState.encodeTurnSend = function() {
+			var s = common_GameState.encodeTurn();
+			var d = new haxe_io_Bytes(new ArrayBuffer(1 + s.length));
+			d.b[0] = 1;
+			d.blit(1,haxe_io_Bytes.ofString(s),0,s.length);
+			var _this = _gthis.ws;
+			if(!_this.connected) {
+				_this.sendQueue.push(d);
+			} else {
+				_this.socket.send(d.toString());
+			}
+		};
+	}
+	,handleData: function(ev) {
+		var _g = ev.data.b[0];
+		switch(_g) {
+		case 1:
+			common_GameState.decodeMaster(ev.data.getString(1,ev.data.length - 1));
+			if(this.wsStatus != ServerStatus.MasterRecv) {
+				this.ren = new GeodesicRender(this.ico);
+				this.zoomIntro = 0;
+				this.gui = new GUI(this.app,this.ico,this.ren,this.ws);
+				this.wsStatus = ServerStatus.MasterRecv;
+			} else {
+				this.ren.rotate(this.gui.camera);
+			}
+			break;
+		case 2:
+			common_GameState.decodeTicker(ev.data.getString(1,ev.data.length - 1));
+			break;
+		case 3:
+			break;
+		default:
+			console.log("unknown packet");
+		}
+		return true;
 	}
 	,tick: function() {
 		var _this = this.app.bitmap;
@@ -470,164 +2155,186 @@ SGame.prototype = $extend(sk_thenet_app_State.prototype,{
 		if(colour >>> 24 != 255) {
 			_this.c2d.clearRect(0,0,width,height);
 		}
-		_this.c2d.fillStyle = "rgba(" + (colour >>> 16 & 255) + ", " + (colour >>> 8 & 255) + ", " + (colour & 255) + ", " + (colour >>> 24) / 255 + ")";
+		_this.c2d.fillStyle = "rgba(" + (colour >>> 16 & 255) + "," + (colour >>> 8 & 255) + "," + (colour & 255) + "," + (colour >>> 24) / 255 + ")";
 		_this.c2d.fillRect(0,0,width,height);
 		_this.changed = true;
-		this.ico.scale(sk_thenet_anim__$Timing_Timing_$Impl_$.quadInOut(this.zoomIntro) * 190);
+		if(this.wsStatus != ServerStatus.MasterRecv) {
+			GUI.fontText.render(this.app.bitmap,10,10,this.ws.connected ? "Downloading data ..." : "Connecting ...");
+			return;
+		}
 		if(this.zoomIntro < 1) {
+			this.ren.scale(sk_thenet_anim__$Timing_Timing_$Impl_$.quadInOut(this.zoomIntro) * 190);
 			this.zoomIntro += .01;
 		}
-		this.ico.render(this.app.bitmap);
-		var cursor = 0;
-		var moveintensity = 0;
-		var movecursors = [new sk_thenet_geom_Point2DI(60,182),new sk_thenet_geom_Point2DI(340,182),new sk_thenet_geom_Point2DI(60,82),new sk_thenet_geom_Point2DI(340,82)];
-		var _g1 = 0;
-		var _g = movecursors.length;
-		while(_g1 < _g) {
-			var ri = _g1++;
-			var i = movecursors.length - ri - 1;
-			var _this_y;
-			var _this_x;
-			var _this_y1;
-			var _this_x1;
-			var _this_y2;
-			var _this_x2 = sk_thenet_plat_js_canvas_Platform.mouse.x;
-			_this_y2 = sk_thenet_plat_js_canvas_Platform.mouse.y;
-			var other = movecursors[i];
-			_this_x1 = _this_x2 - other.x;
-			_this_y1 = _this_y2 - other.y;
-			_this_x = _this_x1 < 0 ? -_this_x1 : _this_x1;
-			_this_y = _this_y1 < 0 ? -_this_y1 : _this_y1;
-			var dist = _this_x + _this_y;
-			if(dist < 70) {
-				cursor = i + 1;
-				moveintensity = 1 - dist / 70;
-			}
-		}
-		var _this1 = this.app.bitmap;
-		var src = this.app.assetManager.getBitmap("game");
-		_this1.c2d.drawImage(src["native"],32 + cursor * 8,24,8,8,sk_thenet_plat_js_canvas_Platform.mouse.x,sk_thenet_plat_js_canvas_Platform.mouse.y,8,8);
-		_this1.changed = true;
-		var i1 = cursor;
-		if(i1 >= 1 && i1 <= 4 && sk_thenet_plat_js_canvas_Platform.mouse.held) {
-			var _this_d;
-			var _this_c;
-			var _this_b;
-			var _this_a;
-			var _this2 = i1 >= 2 && i1 <= 3 ? new sk_thenet_geom_Point3DF(-1,1,0) : new sk_thenet_geom_Point3DF(1,1,0);
-			var factor = 1 / Math.sqrt(_this2.x * _this2.x + _this2.y * _this2.y + _this2.z * _this2.z);
-			var _this3 = sk_thenet_geom_Quaternion.axisRotation(new sk_thenet_geom_Point3DF(_this2.x * factor,_this2.y * factor,_this2.z * factor),(i1 % 2 == 0 ? -.06 : .06) * moveintensity);
-			var other1 = this.camera;
-			_this_a = _this3.a * other1.a - _this3.b * other1.b - _this3.c * other1.c - _this3.d * other1.d;
-			_this_b = _this3.a * other1.b + _this3.b * other1.a + _this3.c * other1.d - _this3.d * other1.c;
-			_this_c = _this3.a * other1.c - _this3.b * other1.d + _this3.c * other1.a + _this3.d * other1.b;
-			_this_d = _this3.a * other1.d + _this3.b * other1.c - _this3.c * other1.b + _this3.d * other1.a;
-			var other_d;
-			var other_c;
-			var other_b;
-			var other_a = 1 / Math.sqrt(_this_a * _this_a + _this_b * _this_b + _this_c * _this_c + _this_d * _this_d);
-			other_b = 0;
-			other_c = 0;
-			other_d = 0;
-			this.camera = new sk_thenet_geom_Quaternion(_this_a * other_a - _this_b * other_b - _this_c * other_c - _this_d * other_d,_this_a * other_b + _this_b * other_a + _this_c * other_d - _this_d * other_c,_this_a * other_c - _this_b * other_d + _this_c * other_a + _this_d * other_b,_this_a * other_d + _this_b * other_c - _this_c * other_b + _this_d * other_a);
-			this.ico.rotate(this.camera);
-		} else {
-			var tmp = cursor == 0;
+		this.ren.render(this.app.bitmap,this.gui.allowSelect);
+		this.gui.render(this.app.bitmap);
+	}
+	,mouseClick: function(_,_1) {
+		if(!this.gui.click()) {
+			this.gui.clickTile(this.ren.click());
 		}
 	}
 	,__class__: SGame
 });
+var ServerStatus = { __ename__ : true, __constructs__ : ["None","Connected","MasterRecv"] };
+ServerStatus.None = ["None",0];
+ServerStatus.None.toString = $estr;
+ServerStatus.None.__enum__ = ServerStatus;
+ServerStatus.Connected = ["Connected",1];
+ServerStatus.Connected.toString = $estr;
+ServerStatus.Connected.__enum__ = ServerStatus;
+ServerStatus.MasterRecv = ["MasterRecv",2];
+ServerStatus.MasterRecv.toString = $estr;
+ServerStatus.MasterRecv.__enum__ = ServerStatus;
 var Sprites = function() { };
 Sprites.__name__ = true;
 Sprites.init = function(am,_) {
-	var _g = [];
-	var _g1 = 0;
-	while(_g1 < 8) {
-		var i = _g1++;
-		var this1 = am.getBitmap("game");
-		var this2 = new sk_thenet_bmp_manip_Cut(i * 24,56,24,24).extract(this1);
-		var orig = this2;
-		var this3;
-		var this4 = new Array(192);
-		var vec = this4;
-		var _g2 = 0;
-		while(_g2 < 8) {
-			var a = _g2++;
-			var width = orig.width << 1;
-			var height = orig.height << 1;
-			var canvas = window.document.createElement("canvas");
-			canvas.width = width;
-			canvas.height = height;
-			var bmp = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas);
-			var width1 = bmp.width;
-			var height1 = bmp.height;
-			if(0 >>> 24 != 255) {
-				bmp.c2d.clearRect(0,0,width1,height1);
-			}
-			bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
-			bmp.c2d.fillRect(0,0,width1,height1);
-			bmp.changed = true;
-			var amask = bmp;
-			var vi = 0;
-			if(amask.changed) {
-				var data8 = amask.c2d.getImageData(0,0,amask.width,amask.height).data;
-				var j = 0;
-				var _g11 = 0;
-				var _g3 = amask.size32;
-				while(_g11 < _g3) {
-					var i1 = _g11++;
-					var this5 = data8[j + 3] << 24 | data8[j] << 16 | data8[j + 1] << 8 | data8[j + 2];
-					amask.data[i1] = this5;
-					j += 4;
-				}
-				amask.changed = false;
-			}
-			var avec = amask.data;
-			var _g21 = 0;
-			var _g12 = amask.height;
-			while(_g21 < _g12) {
-				var y = _g21++;
-				var _g4 = 0;
-				var _g31 = amask.width;
-				while(_g4 < _g31) {
-					var x = _g4++;
-					avec[vi] = sk_thenet_bmp_OrderedDither.BAYER_4[x % 4 + (y % 4 << 2)] < a * 2 ? 0 : -16777216;
-					++vi;
-				}
-			}
-			amask.data = avec;
-			var data81 = new Uint8ClampedArray(amask.size8);
-			var j1 = 0;
-			var _g13 = 0;
-			var _g5 = amask.size32;
-			while(_g13 < _g5) {
-				var i2 = _g13++;
-				data81[j1] = amask.data[i2] >>> 16 & 255;
-				data81[j1 + 1] = amask.data[i2] >>> 8 & 255;
-				data81[j1 + 2] = amask.data[i2] & 255;
-				data81[j1 + 3] = amask.data[i2] >>> 24;
-				j1 += 4;
-			}
-			var idata = new ImageData(amask.width,amask.height);
-			idata.data.set(data81);
-			amask.c2d.putImageData(idata,0,0,0,0,amask.width,amask.height);
-			amask.changed = false;
-			var _g22 = 0;
-			var _g14 = 24;
-			while(_g22 < _g14) {
-				var i3 = _g22++;
-				var this6 = orig;
-				var this7 = new sk_thenet_bmp_manip_Rotate(i3 / 24 * Math.PI * 2).extract(this6);
-				var this8 = this7;
-				new sk_thenet_bmp_manip_AlphaMask(amask,true).manipulate(this8);
-				var this9 = this8;
-				vec[a * 24 + i3] = this9;
+	var this1 = new Array(8);
+	Sprites.amasks = this1;
+	var this2 = new Array(8);
+	Sprites.amasksManip = this2;
+	var _g = 0;
+	while(_g < 8) {
+		var a = _g++;
+		var this3 = Sprites.amasks;
+		var canvas = window.document.createElement("canvas");
+		canvas.width = 48;
+		canvas.height = 48;
+		var bmp = new sk_thenet_plat_js_canvas_bmp_Bitmap(canvas);
+		var width = bmp.width;
+		var height = bmp.height;
+		if(0 >>> 24 != 255) {
+			bmp.c2d.clearRect(0,0,width,height);
+		}
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillRect(0,0,width,height);
+		bmp.changed = true;
+		this3[a] = bmp;
+		var vi = 0;
+		var this4 = new Array(2304);
+		var avec = this4;
+		var _g1 = 0;
+		while(_g1 < 48) {
+			var y = _g1++;
+			var _g2 = 0;
+			while(_g2 < 48) {
+				var x = _g2++;
+				avec[vi] = sk_thenet_bmp_OrderedDither.BAYER_4[x % 4 + (y % 4 << 2)] < a * 2 ? 0 : -16777216;
+				++vi;
 			}
 		}
-		this3 = vec;
-		_g.push(this3);
+		var _this = Sprites.amasks[a];
+		_this.data = avec;
+		var data8 = new Uint8ClampedArray(_this.size8);
+		var j = 0;
+		var _g11 = 0;
+		var _g3 = _this.size32;
+		while(_g11 < _g3) {
+			var i = _g11++;
+			data8[j] = _this.data[i] >>> 16 & 255;
+			data8[j + 1] = _this.data[i] >>> 8 & 255;
+			data8[j + 2] = _this.data[i] & 255;
+			data8[j + 3] = _this.data[i] >>> 24;
+			j += 4;
+		}
+		var idata = new ImageData(_this.width,_this.height);
+		idata.data.set(data8);
+		_this.c2d.putImageData(idata,0,0,0,0,_this.width,_this.height);
+		_this.changed = false;
+		Sprites.amasksManip[a] = new sk_thenet_bmp_manip_AlphaMask(Sprites.amasks[a],true);
 	}
-	Sprites.factionSigns = _g.slice(0);
+	var _g4 = [];
+	var _g12 = 0;
+	while(_g12 < 8) {
+		var i1 = _g12++;
+		var this5 = am.getBitmap("game");
+		var this6 = new sk_thenet_bmp_manip_Cut(i1 * 24,56,24,24).extract(this5);
+		var orig = this6;
+		var this7;
+		var this8 = new Array(16);
+		var vec = this8;
+		var _g5 = 0;
+		while(_g5 < 8) {
+			var a1 = _g5++;
+			var _g21 = 0;
+			var _g13 = 2;
+			while(_g21 < _g13) {
+				var i2 = _g21++;
+				var this9 = orig;
+				var this10 = new sk_thenet_bmp_manip_Rotate(i2 / 2 * Math.PI * 2).extract(this9);
+				var this11 = this10;
+				Sprites.amasksManip[a1].manipulate(this11);
+				var this12 = this11;
+				vec[a1 * 2 + i2] = this12;
+			}
+		}
+		this7 = vec;
+		_g4.push(this7);
+	}
+	Sprites.factionSigns = _g4.slice(0);
+	var this13 = new Array(8);
+	Sprites.units = this13;
+	var _g14 = 0;
+	while(_g14 < 8) {
+		var f = _g14++;
+		var this14 = Sprites.units;
+		var this15 = new Array(7);
+		this14[f] = this15;
+	}
+	var _g15 = 0;
+	while(_g15 < 7) {
+		var u = _g15++;
+		var this16 = am.getBitmap("game");
+		var this17 = new sk_thenet_bmp_manip_Cut(48 + u * 24,80,24,24).extract(this16);
+		var base = this17;
+		var this18 = am.getBitmap("game");
+		var this19 = new sk_thenet_bmp_manip_Cut(48 + u * 24,104,24,24).extract(this18);
+		var outline = this19;
+		var _g22 = 0;
+		while(_g22 < 8) {
+			var f1 = _g22++;
+			if(f1 > 0) {
+				Sprites.units[f1][u] = Sprites.units[0][u];
+			}
+			new sk_thenet_bmp_manip_Recolour(Palette.factions[8 + f1]).manipulate(outline);
+			var this20 = outline;
+			var _this1 = base;
+			_this1.c2d.drawImage(outline["native"],0,0,outline.width,outline.height,0,0,outline.width,outline.height);
+			_this1.changed = true;
+			var this21 = Sprites.units[f1];
+			var this22;
+			var this23 = new Array(16);
+			var vec1 = this23;
+			var _g6 = 0;
+			while(_g6 < 8) {
+				var a2 = _g6++;
+				var _g23 = 0;
+				var _g16 = 2;
+				while(_g23 < _g16) {
+					var i3 = _g23++;
+					var this24 = base;
+					var this25 = new sk_thenet_bmp_manip_Rotate(i3 / 2 * Math.PI * 2).extract(this24);
+					var this26 = this25;
+					Sprites.amasksManip[a2].manipulate(this26);
+					var this27 = this26;
+					vec1[a2 * 2 + i3] = this27;
+				}
+			}
+			this22 = vec1;
+			this21[u] = this22;
+		}
+	}
+	var this28 = new Array(4);
+	Sprites.moveds = this28;
+	var _g24 = 0;
+	var _g17 = Sprites.moveds.length;
+	while(_g24 < _g17) {
+		var i4 = _g24++;
+		var this29 = Sprites.moveds;
+		var this30 = am.getBitmap("game");
+		var this31 = new sk_thenet_bmp_manip_Cut(216 + i4 * 24,80,24,24).extract(this30);
+		this29[i4] = this31;
+	}
 	return false;
 };
 var Std = function() { };
@@ -689,14 +2396,159 @@ _$UInt_UInt_$Impl_$.gte = function(a,b) {
 		return a >= b;
 	}
 };
-var sk_thenet_geom_Point3DF = function(x,y,z) {
-	this.x = x;
-	this.y = y;
-	this.z = z;
+var common_GameState = function() { };
+common_GameState.__name__ = true;
+common_GameState.untilTicker = function() {
+	var diff = new Date().getTime() - common_GameState.ticker.getTime();
+	if(diff > common_GameState.period) {
+		return 0;
+	}
+	return Math.floor((common_GameState.period - diff) / 1000);
 };
-sk_thenet_geom_Point3DF.__name__ = true;
-sk_thenet_geom_Point3DF.prototype = {
-	__class__: sk_thenet_geom_Point3DF
+common_GameState.encodeTurn = function() {
+	return JSON.stringify({ f : common_GameState.currentFaction, m : common_GameState.currentMoves.map(function(m) {
+		return [m.from,m.to,m.type];
+	}), t : common_GameState.turned.slice(0)});
+};
+common_GameState.encodeTurnSend = function() {
+};
+common_GameState.decodeTicker = function(s) {
+	var obj = JSON.parse(s);
+	var t = obj.t;
+	common_GameState.ticker = new Date(t);
+};
+common_GameState.decodeMaster = function(s) {
+	var obj = JSON.parse(s);
+	common_GameState.height = obj.h.slice(0);
+	common_GameState.faction = obj.f.slice(0);
+	common_GameState.unit = obj.u.slice(0);
+	common_GameState.unitFac = obj.uf.slice(0);
+	common_GameState.stats = obj.s.slice(0);
+	var t = obj.t;
+	common_GameState.ticker = new Date(t);
+	common_GameState.period = obj.p;
+	var _g = 0;
+	while(_g < 320) {
+		var i = _g++;
+		common_GameState.turned[i] = 0;
+		if(common_GameState.unit[i] != -1) {
+			common_GameState.turned[i] = 1;
+		}
+	}
+};
+common_GameState.initEmpty = function(ico) {
+	common_GameState.ico = ico;
+	common_GameState.currentFaction = 0;
+	common_GameState.currentMoves = [];
+	var this1 = new Array(320);
+	common_GameState.currentClicks = this1;
+	common_GameState.currentSL = 5;
+	common_GameState.currentNRG = 11;
+	common_GameState.maxNRG = 15;
+	var this2 = new Array(320);
+	common_GameState.turned = this2;
+	var _g = 0;
+	while(_g < 320) {
+		var i = _g++;
+		common_GameState.currentClicks[i] = null;
+		common_GameState.turned[i] = 0;
+	}
+};
+common_GameState.killUnit = function(t) {
+	common_GameState.unit[t] = -1;
+	common_GameState.unitFac[t] = -1;
+	common_GameState.stats[t] = null;
+	common_GameState.turned[t] = 0;
+};
+common_GameState.moveUnit = function(f,t) {
+	common_GameState.unit[t] = common_GameState.unit[f];
+	common_GameState.unitFac[t] = common_GameState.unitFac[f];
+	common_GameState.stats[t] = common_GameState.stats[f];
+	common_GameState.unit[f] = -1;
+	common_GameState.unitFac[f] = -1;
+	common_GameState.stats[f] = null;
+};
+common_GameState.captureLand = function(t) {
+	common_GameState.faction[t] = common_GameState.unitFac[t];
+};
+common_GameState.turn = function() {
+	var tilesAttacked = [];
+	var attacks = common_GameState.currentMoves.filter(function(m) {
+		return m.type == 1;
+	});
+	while(attacks.length > 0) {
+		var max = attacks.length;
+		var $int = sk_thenet_FM.prng.streamFunc();
+		var int1 = max;
+		var at = attacks.splice(($int < 0 ? 4294967296.0 + $int : $int + 0.0) % (int1 < 0 ? 4294967296.0 + int1 : int1 + 0.0) | 0,1)[0];
+		if(common_GameState.unit[at.from] == -1 || common_GameState.unit[at.to] == -1) {
+			continue;
+		}
+		tilesAttacked.push(at.to);
+		if(common_GameState.turned[at.to] == 4) {
+			common_GameState.killUnit(at.to);
+			continue;
+		}
+		var attacker = common_GameState.unit[at.from];
+		var defender = common_GameState.unit[at.to];
+		var dmg = common_GameState.DAMAGE_TABLE[attacker + defender * 10];
+		var counter = 0;
+		if(defender == 5) {
+			counter = common_GameState.DAMAGE_TABLE[defender + attacker * 10];
+			common_GameState.killUnit(at.to);
+		} else if(dmg >= common_GameState.stats[at.to].hp) {
+			common_GameState.killUnit(at.to);
+		} else {
+			common_GameState.stats[at.to].hp -= dmg;
+			counter = common_GameState.DAMAGE_TABLE[defender + attacker * 10];
+		}
+		if(counter > 0) {
+			if(counter >= common_GameState.stats[at.from].hp) {
+				common_GameState.killUnit(at.from);
+			} else {
+				common_GameState.stats[at.from].hp -= counter;
+			}
+		}
+	}
+	var moves = common_GameState.currentMoves.filter(function(m1) {
+		return m1.type == 0;
+	});
+	while(moves.length > 0) {
+		var max1 = moves.length;
+		var int2 = sk_thenet_FM.prng.streamFunc();
+		var int3 = max1;
+		var mv = moves.splice((int2 < 0 ? 4294967296.0 + int2 : int2 + 0.0) % (int3 < 0 ? 4294967296.0 + int3 : int3 + 0.0) | 0,1)[0];
+		if(common_GameState.unit[mv.from] == -1 || common_GameState.unit[mv.to] != -1) {
+			continue;
+		}
+		common_GameState.moveUnit(mv.from,mv.to);
+	}
+	var captures = common_GameState.currentMoves.filter(function(m2) {
+		return m2.type == 2;
+	});
+	while(captures.length > 0) {
+		var max2 = captures.length;
+		var int4 = sk_thenet_FM.prng.streamFunc();
+		var int5 = max2;
+		var cp = captures.splice((int4 < 0 ? 4294967296.0 + int4 : int4 + 0.0) % (int5 < 0 ? 4294967296.0 + int5 : int5 + 0.0) | 0,1)[0];
+		if(common_GameState.unit[cp.from] == -1 || tilesAttacked.indexOf(cp.from) != -1) {
+			continue;
+		}
+		common_GameState.captureLand(cp.from);
+	}
+	common_GameState.currentMoves = [];
+	var _g = 0;
+	while(_g < 320) {
+		var i = _g++;
+		if(common_GameState.turned[i] == 4) {
+			common_GameState.stats[i] = common_Unit.UNITS[common_GameState.unit[i]].cloneStats();
+		}
+		common_GameState.currentClicks[i] = null;
+		common_GameState.turned[i] = 0;
+		if(common_GameState.unit[i] != -1) {
+			common_GameState.turned[i] = 1;
+		}
+	}
 };
 var common_GeoPoint = function(x,y,z) {
 	sk_thenet_geom_Point3DF.call(this,x,y,z);
@@ -716,10 +2568,6 @@ common_GeoPoint.prototype = $extend(sk_thenet_geom_Point3DF.prototype,{
 	__class__: common_GeoPoint
 });
 var common_Geodesic = function(points,tiles) {
-	this.ph = 0;
-	this.lastScale = 1;
-	this.stVisible = 0;
-	this.ptVisible = 0;
 	this.points = points.slice(0);
 	this.tiles = tiles.slice(0);
 	var this1 = new Array(12);
@@ -740,74 +2588,6 @@ var common_Geodesic = function(points,tiles) {
 			}
 		}
 	}
-	var _g3 = 0;
-	while(_g3 < tiles.length) {
-		var t1 = tiles[_g3];
-		++_g3;
-		t1.colour = -15724528 | sk_thenet_FM.prng.streamFunc();
-	}
-	var _g4 = 0;
-	while(_g4 < 20) {
-		var i = _g4++;
-		var _g11 = 0;
-		while(_g11 < 8) {
-			var f = _g11++;
-			if(i == 5) {
-				tiles[i + f * 20].sprite = f;
-			}
-			tiles[i + f * 20].occupied = f;
-		}
-	}
-	var length = points.length;
-	var this2 = new Array(length);
-	this.rpoints = this2;
-	var length1 = points.length;
-	var this3 = new Array(length1);
-	this.ppoints = this3;
-	var length2 = points.length;
-	var this4 = new Array(length2);
-	this.upoints = this4;
-	var length3 = tiles.length;
-	var this5 = new Array(length3);
-	this.ptiles = this5;
-	var length4 = tiles.length;
-	var this6 = new Array(length4);
-	this.stiles = this6;
-	var length5 = points.length;
-	var this7 = new Array(length5);
-	this.height = this7;
-	var _g12 = 0;
-	var _g5 = this.height.length;
-	while(_g12 < _g5) {
-		var i1 = _g12++;
-		var this8 = this.height;
-		var $int = sk_thenet_FM.prng.streamFunc();
-		var int1 = 2147483647;
-		this8[i1] = ($int < 0 ? 4294967296.0 + $int : $int + 0.0) / (int1 < 0 ? 4294967296.0 + int1 : int1 + 0.0) * .2 * .5;
-	}
-	this.select = tiles[35];
-	var length6 = Palette.facPatterns.length;
-	var this9 = new Array(length6);
-	this.facLight = this9;
-	var _g6 = [];
-	var _g13 = 0;
-	while(_g13 < 8) {
-		var i2 = _g13++;
-		var _g21 = 0;
-		while(_g21 < 120) {
-			var j = _g21++;
-			_g6.push(Math.floor(4 * Math.sin((j + i2 * 45) / 120 * Math.PI * 2)));
-		}
-	}
-	this.facLightPattern = _g6.slice(0);
-	var _g14 = [];
-	var _g22 = 0;
-	while(_g22 < 120) {
-		var i3 = _g22++;
-		_g14.push(Math.cos(i3 / 120 * Math.PI * 2));
-	}
-	this.spriteOffsetPattern = _g14.slice(0);
-	this.rotate(sk_thenet_geom_Quaternion.identity);
 };
 common_Geodesic.__name__ = true;
 common_Geodesic.generateIcosahedron = function(n) {
@@ -1159,375 +2939,149 @@ common_Geodesic.generateIcosahedron = function(n) {
 			}
 		}
 	}
+	var _g27 = 0;
+	var _g110 = subtiles.length;
+	while(_g27 < _g110) {
+		var ti2 = _g27++;
+		subtiles[ti2].index = ti2;
+		var visited = [];
+		var queue = [subtiles[ti2]];
+		while(queue.length > 0) {
+			var qt = queue.shift();
+			visited.push(qt);
+			if(qt != subtiles[ti2]) {
+				subtiles[ti2].range.push(qt);
+			}
+			var _g34 = 0;
+			var _g44 = qt.adjacent;
+			while(_g34 < _g44.length) {
+				var a7 = _g44[_g34];
+				++_g34;
+				var tmp;
+				var a8 = a7.points;
+				var b4 = subtiles[ti2].points;
+				var ret6 = [];
+				var _g20 = 0;
+				while(_g20 < a8.length) {
+					var p8 = a8[_g20];
+					++_g20;
+					if(b4.indexOf(p8) != -1) {
+						ret6.push(p8);
+					}
+				}
+				if(ret6.length > 0) {
+					tmp = visited.indexOf(a7) == -1;
+				} else {
+					tmp = false;
+				}
+				if(tmp) {
+					queue.push(a7);
+				}
+			}
+		}
+	}
 	return new common_Geodesic(subpoints,subtiles);
 };
+common_Geodesic.getRange = function(tile,range,attack) {
+	tile.dist = 0;
+	var queue = [tile];
+	var visited = [];
+	var ret = [];
+	while(queue.length > 0) {
+		var qt = queue.shift();
+		visited.push(qt);
+		if(qt.dist != 0) {
+			ret.push(qt);
+		}
+		if(qt.dist >= range) {
+			continue;
+		}
+		var _g = 0;
+		var _g1 = qt.range;
+		while(_g < _g1.length) {
+			var a = _g1[_g];
+			++_g;
+			if(!attack && common_GameState.unit[a.index] != -1) {
+				continue;
+			}
+			if(visited.indexOf(a) == -1) {
+				if(queue.indexOf(a) == -1) {
+					a.dist = qt.dist + 1;
+					queue.push(a);
+				} else if(a.dist > qt.dist + 1) {
+					a.dist = qt.dist + 1;
+				}
+			}
+		}
+	}
+	return ret;
+};
 common_Geodesic.prototype = {
-	rotate: function(q,doScale) {
-		if(doScale == null) {
-			doScale = true;
-		}
-		var rpVisible = 0;
-		var _g = 0;
-		var _g1 = this.points;
-		while(_g < _g1.length) {
-			var p = _g1[_g];
-			++_g;
-			var _this_z;
-			var _this_y;
-			var _this_x;
-			var _this_d;
-			var _this_c;
-			var _this_b;
-			var _this_a;
-			var _this_d1;
-			var _this_c1;
-			var _this_b1;
-			var _this_a1;
-			var other_d;
-			var other_c;
-			var other_b;
-			var other_a = 0;
-			other_b = p.x;
-			other_c = p.y;
-			other_d = p.z;
-			_this_a1 = q.a * other_a - q.b * other_b - q.c * other_c - q.d * other_d;
-			_this_b1 = q.a * other_b + q.b * other_a + q.c * other_d - q.d * other_c;
-			_this_c1 = q.a * other_c - q.b * other_d + q.c * other_a + q.d * other_b;
-			_this_d1 = q.a * other_d + q.b * other_c - q.c * other_b + q.d * other_a;
-			var other_d1;
-			var other_c1;
-			var other_b1;
-			var other_a1;
-			var _this_d2;
-			var _this_c2;
-			var _this_b2;
-			var _this_a2 = q.a;
-			_this_b2 = -q.b;
-			_this_c2 = -q.c;
-			_this_d2 = -q.d;
-			var other_d2;
-			var other_c2;
-			var other_b2;
-			var other_a2 = 1 / (Math.sqrt(q.a * q.a + q.b * q.b + q.c * q.c + q.d * q.d) * Math.sqrt(q.a * q.a + q.b * q.b + q.c * q.c + q.d * q.d));
-			other_b2 = 0;
-			other_c2 = 0;
-			other_d2 = 0;
-			other_a1 = _this_a2 * other_a2 - _this_b2 * other_b2 - _this_c2 * other_c2 - _this_d2 * other_d2;
-			other_b1 = _this_a2 * other_b2 + _this_b2 * other_a2 + _this_c2 * other_d2 - _this_d2 * other_c2;
-			other_c1 = _this_a2 * other_c2 - _this_b2 * other_d2 + _this_c2 * other_a2 + _this_d2 * other_b2;
-			other_d1 = _this_a2 * other_d2 + _this_b2 * other_c2 - _this_c2 * other_b2 + _this_d2 * other_a2;
-			_this_a = _this_a1 * other_a1 - _this_b1 * other_b1 - _this_c1 * other_c1 - _this_d1 * other_d1;
-			_this_b = _this_a1 * other_b1 + _this_b1 * other_a1 + _this_c1 * other_d1 - _this_d1 * other_c1;
-			_this_c = _this_a1 * other_c1 - _this_b1 * other_d1 + _this_c1 * other_a1 + _this_d1 * other_b1;
-			_this_d = _this_a1 * other_d1 + _this_b1 * other_c1 - _this_c1 * other_b1 + _this_d1 * other_a1;
-			_this_x = _this_b;
-			_this_y = _this_c;
-			_this_z = _this_d;
-			var factor = .7 + .5 * this.height[rpVisible];
-			this.rpoints[rpVisible] = common_GeoPoint.ofPoint(new sk_thenet_geom_Point3DF(_this_x * factor,_this_y * factor,_this_z * factor));
-			++rpVisible;
-		}
-		if(doScale) {
-			this.scale(this.lastScale);
-		}
-	}
-	,scale: function(scale) {
-		this.lastScale = scale;
-		var ppVisible = 0;
-		var _g = 0;
-		var _g1 = this.rpoints;
-		while(_g < _g1.length) {
-			var p = _g1[_g];
-			++_g;
-			this.ppoints[ppVisible] = new sk_thenet_geom_Point2DI(Math.floor(p.x * scale + 200),Math.floor(p.y * scale * .93 + 112 + 70));
-			var scale1 = scale * 1.03;
-			this.upoints[ppVisible] = new sk_thenet_geom_Point2DI(Math.floor(p.x * scale1 + 200),Math.floor(p.y * scale1 * .93 + 112 + 70));
-			++ppVisible;
-		}
-		this.ptVisible = 0;
-		this.stVisible = 0;
-		var _g2 = 0;
-		var _g11 = this.tiles;
-		while(_g2 < _g11.length) {
-			var t = _g11[_g2];
-			++_g2;
-			if(this.rpoints[t.points[0]].z < -.2) {
-				t.visible = false;
-			} else if(this.ppoints[t.points[0]].y >= 225 && this.ppoints[t.points[1]].y >= 225 && this.ppoints[t.points[2]].y >= 225) {
-				t.visible = false;
-			} else {
-				var p1 = this.ppoints[t.points[0]];
-				var p2 = this.ppoints[t.points[1]];
-				var p3 = this.ppoints[t.points[2]];
-				var area = p1.x * p2.y + p2.x * p3.y + p3.x * p1.y - p2.x * p1.y - p3.x * p2.y - p1.x * p3.y;
-				t.visible = area > 0;
-				var y = 7 - Math.floor(area * 2.6 / scale);
-				t.alpha = 0 > y ? 0 : y;
-				var tmp;
-				if(t.occupied != -1) {
-					var y1 = Math.floor(area * 1.3 / scale);
-					if(15 < y1) {
-						tmp = 15;
-					} else {
-						tmp = y1;
-					}
-				} else {
-					var x = Palette.patterns.length - 1;
-					var y2 = Math.floor(area * 4 / scale) + (t.pent ? 5 : 0);
-					var y3 = (49 < y2 ? 49 : y2) + (t.alpha >> 1) * 50;
-					if(x < y3) {
-						tmp = x;
-					} else {
-						tmp = y3;
-					}
-				}
-				t.colour = tmp;
-			}
-			if(t.visible) {
-				this.ptiles[this.ptVisible++] = t;
-				if(t.sprite != -1) {
-					var xmin = this.ppoints[t.points[0]].x;
-					var xmax = this.ppoints[t.points[0]].x;
-					var ymin = this.ppoints[t.points[0]].y;
-					var ymax = this.ppoints[t.points[0]].y;
-					var _g21 = 1;
-					while(_g21 < 3) {
-						var i = _g21++;
-						if(this.ppoints[t.points[i]].x < xmin) {
-							xmin = this.ppoints[t.points[i]].x;
-						}
-						if(this.ppoints[t.points[i]].x > xmax) {
-							xmax = this.ppoints[t.points[i]].x;
-						}
-						if(this.ppoints[t.points[i]].y < ymin) {
-							ymin = this.ppoints[t.points[i]].y;
-						}
-						if(this.ppoints[t.points[i]].y > ymax) {
-							ymax = this.ppoints[t.points[i]].y;
-						}
-					}
-					t.spriteX = xmin + xmax >> 1;
-					t.spriteY = ymin + ymax >> 1;
-					var oangle = Math.atan2(205 - t.spriteY,200 - t.spriteX);
-					t.spriteOX = Math.cos(oangle) * 4;
-					t.spriteOY = Math.sin(oangle) * 4;
-					t.spriteAngle = Math.atan2(265 - t.spriteY,200 - t.spriteX) - Math.PI * .5;
-					this.stiles[this.stVisible++] = t;
-				}
-			}
-		}
-	}
-	,render: function(bmp) {
-		var _gthis = this;
-		var _g = 0;
-		while(_g < 8) {
-			var i = _g++;
-			this.facLight[i] = this.facLightPattern[i * 120 + this.ph * (i < 4 ? 1 : 2) % 120];
-		}
-		var lastSelect = this.select;
-		this.select = null;
-		var _g1 = 0;
-		var _g2 = this.ptVisible;
-		while(_g1 < _g2) {
-			var rti = _g1++;
-			var tile = this.ptiles[rti];
-			var sel = tile == lastSelect;
-			var ly = -1;
-			var txmin = 399;
-			var txmax = 0;
-			var c = tile.colour;
-			if(sel) {
-				c += tile.occupied == -1 ? 10 : 2;
-			}
-			if(tile.occupied != -1) {
-				c += this.facLight[tile.occupied];
-			}
-			var p = tile.occupied == -1 ? new common_TopDownBresenhams(this.ppoints[tile.points[0]],this.ppoints[tile.points[1]],this.ppoints[tile.points[2]]) : new common_TopDownBresenhams(this.upoints[tile.points[0]],this.upoints[tile.points[1]],this.upoints[tile.points[2]]);
-			while(p.hasNext()) {
-				var p1 = p.next();
-				if(p1.y != ly && ly != -1) {
-					if(txmax >= txmin) {
-						var tmp;
-						if(sk_thenet_plat_js_canvas_Platform.mouse.y == ly) {
-							var x = sk_thenet_plat_js_canvas_Platform.mouse.x;
-							if(x >= txmin) {
-								tmp = x <= txmax;
-							} else {
-								tmp = false;
-							}
-						} else {
-							tmp = false;
-						}
-						if(tmp) {
-							_gthis.select = tile;
-						}
-						bmp.c2d.fillStyle = tile.occupied != -1 ? Palette.facPatterns[tile.occupied][c] : Palette.patterns[c];
-						bmp.c2d.fillRect(txmin,ly,txmax - txmin,1);
-						bmp.changed = true;
-					}
-					txmin = 399;
-					txmax = 0;
-				}
-				if(txmin > p1.x) {
-					txmin = p1.x;
-				}
-				if(txmax < p1.x) {
-					txmax = p1.x;
-				}
-				ly = p1.y;
-			}
-			if(ly != -1) {
-				if(txmax >= txmin) {
-					var tmp1;
-					if(sk_thenet_plat_js_canvas_Platform.mouse.y == ly) {
-						var x1 = sk_thenet_plat_js_canvas_Platform.mouse.x;
-						if(x1 >= txmin) {
-							tmp1 = x1 <= txmax;
-						} else {
-							tmp1 = false;
-						}
-					} else {
-						tmp1 = false;
-					}
-					if(tmp1) {
-						_gthis.select = tile;
-					}
-					bmp.c2d.fillStyle = tile.occupied != -1 ? Palette.facPatterns[tile.occupied][c] : Palette.patterns[c];
-					bmp.c2d.fillRect(txmin,ly,txmax - txmin,1);
-					bmp.changed = true;
-				}
-				txmin = 399;
-				txmax = 0;
-			}
-		}
-		var _g11 = 0;
-		var _g3 = this.stVisible;
-		while(_g11 < _g3) {
-			var rti1 = _g11++;
-			var tile1 = this.stiles[rti1];
-			var this1 = Sprites.factionSigns[tile1.sprite];
-			var alpha = tile1.alpha;
-			var angle = tile1.spriteAngle;
-			while(angle < 0) angle += Math.PI * 2;
-			var angles = Math.floor(this1.length >> 3);
-			var di = angle / (Math.PI * 2) * angles;
-			var df = di - Math.floor(di);
-			var dc = Math.ceil(di) - di;
-			var src = this1[alpha * angles + (df <= dc ? Math.floor(di) : Math.ceil(di)) % angles];
-			bmp.c2d.drawImage(src["native"],0,0,src.width,src.height,tile1.spriteX - 24 + Math.floor(this.spriteOffsetPattern[this.ph] * tile1.spriteOX),tile1.spriteY - 24 + Math.floor(this.spriteOffsetPattern[this.ph] * tile1.spriteOY),src.width,src.height);
-			bmp.changed = true;
-			if(bmp.changed) {
-				var data8 = bmp.c2d.getImageData(0,0,bmp.width,bmp.height).data;
-				var j = 0;
-				var _g12 = 0;
-				var _g4 = bmp.size32;
-				while(_g12 < _g4) {
-					var i1 = _g12++;
-					var this2 = data8[j + 3] << 24 | data8[j] << 16 | data8[j + 1] << 8 | data8[j + 2];
-					bmp.data[i1] = this2;
-					j += 4;
-				}
-				bmp.changed = false;
-			}
-		}
-		this.ph++;
-		this.ph %= 120;
-	}
-	,__class__: common_Geodesic
+	__class__: common_Geodesic
 };
-var common_TopDownBresenhams = function(p1,p2,p3) {
-	this.b1 = sk_thenet_stream_bmp_Bresenham.getTopDown(p1,p2);
-	this.b2 = sk_thenet_stream_bmp_Bresenham.getTopDown(p2,p3);
-	this.b3 = sk_thenet_stream_bmp_Bresenham.getTopDown(p3,p1);
+var common_Move = function(from,to,type) {
+	this.from = from;
+	this.to = to;
+	this.type = type;
 };
-common_TopDownBresenhams.__name__ = true;
-common_TopDownBresenhams.prototype = {
-	hasNext: function() {
-		if(!(this.f1 != null || this.b1.continueFunc() || (this.f2 != null || this.b2.continueFunc()))) {
-			if(this.f3 == null) {
-				return this.b3.continueFunc();
-			} else {
-				return true;
-			}
-		} else {
-			return true;
-		}
-	}
-	,next: function() {
-		if(this.f1 == null && this.b1.continueFunc()) {
-			this.f1 = this.b1.streamFunc();
-		}
-		if(this.f2 == null && this.b2.continueFunc()) {
-			this.f2 = this.b2.streamFunc();
-		}
-		if(this.f3 == null && this.b3.continueFunc()) {
-			this.f3 = this.b3.streamFunc();
-		}
-		var ret = null;
-		if(this.f1 == null) {
-			if(this.f2 == null) {
-				ret = this.f3;
-				this.f3 = null;
-				return ret;
-			}
-			if(this.f3 == null) {
-				ret = this.f2;
-				this.f2 = null;
-				return ret;
-			}
-		}
-		if(this.f2 == null) {
-			if(this.f1 == null) {
-				ret = this.f3;
-				this.f3 = null;
-				return ret;
-			}
-			if(this.f3 == null) {
-				ret = this.f1;
-				this.f1 = null;
-				return ret;
-			}
-		}
-		if(this.f3 == null) {
-			if(this.f2 == null) {
-				ret = this.f1;
-				this.f1 = null;
-				return ret;
-			}
-			if(this.f1 == null) {
-				ret = this.f2;
-				this.f2 = null;
-				return ret;
-			}
-		}
-		if(this.f1 != null && ((this.f2 == null || this.f1.y <= this.f2.y) && (this.f3 == null || this.f1.y <= this.f3.y))) {
-			ret = this.f1;
-			this.f1 = null;
-		} else if(this.f2 != null && (this.f3 == null || this.f2.y <= this.f3.y)) {
-			ret = this.f2;
-			this.f2 = null;
-		} else {
-			ret = this.f3;
-			this.f3 = null;
-		}
-		return ret;
-	}
-	,__class__: common_TopDownBresenhams
+common_Move.__name__ = true;
+common_Move.prototype = {
+	__class__: common_Move
 };
 var common_Tile = function(points) {
+	this.hover = false;
+	this.selected = false;
 	this.spriteOY = -1;
 	this.spriteOX = -1;
 	this.spriteAngle = -1;
 	this.spriteY = -1;
 	this.spriteX = -1;
-	this.sprite = -1;
-	this.occupied = -1;
-	this.adjacent = [];
+	this.dist = -1;
 	this.points = points;
+	this.adjacent = [];
+	this.range = [];
 };
 common_Tile.__name__ = true;
 common_Tile.prototype = {
 	__class__: common_Tile
+};
+var common_OrderType = { __ename__ : true, __constructs__ : ["Cancel","Skip","Capture","Shield","Abandon","Undo","Build","BuildCancel"] };
+common_OrderType.Cancel = ["Cancel",0];
+common_OrderType.Cancel.toString = $estr;
+common_OrderType.Cancel.__enum__ = common_OrderType;
+common_OrderType.Skip = ["Skip",1];
+common_OrderType.Skip.toString = $estr;
+common_OrderType.Skip.__enum__ = common_OrderType;
+common_OrderType.Capture = ["Capture",2];
+common_OrderType.Capture.toString = $estr;
+common_OrderType.Capture.__enum__ = common_OrderType;
+common_OrderType.Shield = ["Shield",3];
+common_OrderType.Shield.toString = $estr;
+common_OrderType.Shield.__enum__ = common_OrderType;
+common_OrderType.Abandon = ["Abandon",4];
+common_OrderType.Abandon.toString = $estr;
+common_OrderType.Abandon.__enum__ = common_OrderType;
+common_OrderType.Undo = ["Undo",5];
+common_OrderType.Undo.toString = $estr;
+common_OrderType.Undo.__enum__ = common_OrderType;
+common_OrderType.Build = ["Build",6];
+common_OrderType.Build.toString = $estr;
+common_OrderType.Build.__enum__ = common_OrderType;
+common_OrderType.BuildCancel = ["BuildCancel",7];
+common_OrderType.BuildCancel.toString = $estr;
+common_OrderType.BuildCancel.__enum__ = common_OrderType;
+var common_Unit = function(sprite,name,stats,orders) {
+	this.sprite = sprite;
+	this.name = name;
+	this.stats = stats;
+	this.orders = orders;
+};
+common_Unit.__name__ = true;
+common_Unit.prototype = {
+	cloneStats: function() {
+		return { hp : this.stats.hp, maxHp : this.stats.maxHp, mp : this.stats.mp, atk : this.stats.atk, def : this.stats.def, ran : this.stats.ran};
+	}
+	,__class__: common_Unit
 };
 var haxe_IMap = function() { };
 haxe_IMap.__name__ = true;
@@ -3097,6 +4651,17 @@ sk_thenet_app_AssetManager.prototype = {
 		var _this1 = this.assetsMap;
 		return (__map_reserved[id] != null ? _this1.getReserved(id) : _this1.h[id]).current;
 	}
+	,getSound: function(id) {
+		if(!this.isLoaded(id)) {
+			return null;
+		}
+		var _this = this.assetsMap;
+		if((__map_reserved[id] != null ? _this.getReserved(id) : _this.h[id]).type != sk_thenet_app_AssetType.Sound) {
+			throw new js__$Boot_HaxeError("asset type mismatch");
+		}
+		var _this1 = this.assetsMap;
+		return (__map_reserved[id] != null ? _this1.getReserved(id) : _this1.h[id]).current;
+	}
 	,attachConsole: function(console) {
 		console.listen("file",$bind(this,this.handleFile));
 		var _g = 0;
@@ -3236,7 +4801,7 @@ sk_thenet_app_Console.prototype = $extend(sk_thenet_event_Source.prototype,{
 		if(0 >>> 24 != 255) {
 			bmp.c2d.clearRect(0,0,width1,height1);
 		}
-		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp.c2d.fillRect(0,0,width1,height1);
 		bmp.changed = true;
 		this.bg = bmp;
@@ -3251,7 +4816,7 @@ sk_thenet_app_Console.prototype = $extend(sk_thenet_event_Source.prototype,{
 		if(0 >>> 24 != 255) {
 			bmp1.c2d.clearRect(0,0,width3,height3);
 		}
-		bmp1.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp1.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp1.c2d.fillRect(0,0,width3,height3);
 		bmp1.changed = true;
 		this.historyCache = bmp1;
@@ -3322,7 +4887,7 @@ sk_thenet_app_Console.prototype = $extend(sk_thenet_event_Source.prototype,{
 		if(0 >>> 24 != 255) {
 			bmp.c2d.clearRect(0,0,width1,height1);
 		}
-		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp.c2d.fillRect(0,0,width1,height1);
 		bmp.changed = true;
 		this.historyCache = bmp;
@@ -3529,7 +5094,7 @@ sk_thenet_app_Console.prototype = $extend(sk_thenet_event_Source.prototype,{
 			if(0 >>> 24 != 255) {
 				bmp.c2d.clearRect(0,0,width1,height1);
 			}
-			bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+			bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 			bmp.c2d.fillRect(0,0,width1,height1);
 			bmp.changed = true;
 			this.lastFrame = bmp;
@@ -3537,19 +5102,6 @@ sk_thenet_app_Console.prototype = $extend(sk_thenet_event_Source.prototype,{
 			var src = this.surface.bitmap;
 			_this.c2d.drawImage(src["native"],0,0,src.width,src.height,0,0,src.width,src.height);
 			_this.changed = true;
-			if(_this.changed) {
-				var data8 = _this.c2d.getImageData(0,0,_this.width,_this.height).data;
-				var j = 0;
-				var _g1 = 0;
-				var _g = _this.size32;
-				while(_g1 < _g) {
-					var i = _g1++;
-					var this1 = data8[j + 3] << 24 | data8[j] << 16 | data8[j + 1] << 8 | data8[j + 2];
-					_this.data[i] = this1;
-					j += 4;
-				}
-				_this.changed = false;
-			}
 		}
 		if(!this.show && this.lastFrame != null && !this.applicationTick) {
 			var _this1 = this.surface.bitmap;
@@ -3558,26 +5110,13 @@ sk_thenet_app_Console.prototype = $extend(sk_thenet_event_Source.prototype,{
 			if(0 >>> 24 != 255) {
 				_this1.c2d.clearRect(0,0,width2,height2);
 			}
-			_this1.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+			_this1.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 			_this1.c2d.fillRect(0,0,width2,height2);
 			_this1.changed = true;
 			var _this2 = this.surface.bitmap;
 			var src1 = this.lastFrame;
 			_this2.c2d.drawImage(src1["native"],0,0,src1.width,src1.height,0,0,src1.width,src1.height);
 			_this2.changed = true;
-			if(_this2.changed) {
-				var data81 = _this2.c2d.getImageData(0,0,_this2.width,_this2.height).data;
-				var j1 = 0;
-				var _g11 = 0;
-				var _g2 = _this2.size32;
-				while(_g11 < _g2) {
-					var i1 = _g11++;
-					var this2 = data81[j1 + 3] << 24 | data81[j1] << 16 | data81[j1 + 1] << 8 | data81[j1 + 2];
-					_this2.data[i1] = this2;
-					j1 += 4;
-				}
-				_this2.changed = false;
-			}
 		}
 		if(this.show) {
 			if(!this.applicationTick) {
@@ -3585,54 +5124,15 @@ sk_thenet_app_Console.prototype = $extend(sk_thenet_event_Source.prototype,{
 				var src2 = this.lastFrame;
 				_this3.c2d.drawImage(src2["native"],0,0,src2.width,src2.height,0,0,src2.width,src2.height);
 				_this3.changed = true;
-				if(_this3.changed) {
-					var data82 = _this3.c2d.getImageData(0,0,_this3.width,_this3.height).data;
-					var j2 = 0;
-					var _g12 = 0;
-					var _g3 = _this3.size32;
-					while(_g12 < _g3) {
-						var i2 = _g12++;
-						var this3 = data82[j2 + 3] << 24 | data82[j2] << 16 | data82[j2 + 1] << 8 | data82[j2 + 2];
-						_this3.data[i2] = this3;
-						j2 += 4;
-					}
-					_this3.changed = false;
-				}
 			}
 			var _this4 = this.surface.bitmap;
 			var src3 = this.bg;
 			_this4.c2d.drawImage(src3["native"],0,0,src3.width,src3.height,0,0,src3.width,src3.height);
 			_this4.changed = true;
-			if(_this4.changed) {
-				var data83 = _this4.c2d.getImageData(0,0,_this4.width,_this4.height).data;
-				var j3 = 0;
-				var _g13 = 0;
-				var _g4 = _this4.size32;
-				while(_g13 < _g4) {
-					var i3 = _g13++;
-					var this4 = data83[j3 + 3] << 24 | data83[j3] << 16 | data83[j3 + 1] << 8 | data83[j3 + 2];
-					_this4.data[i3] = this4;
-					j3 += 4;
-				}
-				_this4.changed = false;
-			}
 			var _this5 = this.surface.bitmap;
 			var src4 = this.historyCache;
 			_this5.c2d.drawImage(src4["native"],0,0,src4.width,src4.height,0,0,src4.width,src4.height);
 			_this5.changed = true;
-			if(_this5.changed) {
-				var data84 = _this5.c2d.getImageData(0,0,_this5.width,_this5.height).data;
-				var j4 = 0;
-				var _g14 = 0;
-				var _g5 = _this5.size32;
-				while(_g14 < _g5) {
-					var i4 = _g14++;
-					var this5 = data84[j4 + 3] << 24 | data84[j4] << 16 | data84[j4 + 1] << 8 | data84[j4 + 2];
-					_this5.data[i4] = this5;
-					j4 += 4;
-				}
-				_this5.changed = false;
-			}
 			this.font.render(this.surface.bitmap,0,this.height - 12,"> " + this.command + "_");
 		}
 		this.applicationTick = this.pause ? false : this.frameSlow != 0 ? this.frameCount == 0 : true;
@@ -3713,7 +5213,7 @@ var sk_thenet_app_TNPreloader = function(app,nextState,fast) {
 	if(0 >>> 24 != 255) {
 		bmp.c2d.clearRect(0,0,width,height);
 	}
-	bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+	bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 	bmp.c2d.fillRect(0,0,width,height);
 	bmp.changed = true;
 	this.logo = bmp;
@@ -3745,7 +5245,7 @@ var sk_thenet_app_TNPreloader = function(app,nextState,fast) {
 	if(0 >>> 24 != 255) {
 		bmp1.c2d.clearRect(0,0,width1,height1);
 	}
-	bmp1.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+	bmp1.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 	bmp1.c2d.fillRect(0,0,width1,height1);
 	bmp1.changed = true;
 	this.logoAppear = bmp1;
@@ -3800,7 +5300,7 @@ var sk_thenet_app_TNPreloader = function(app,nextState,fast) {
 		if(0 >>> 24 != 255) {
 			bmp2.c2d.clearRect(0,0,width2,height2);
 		}
-		bmp2.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp2.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp2.c2d.fillRect(0,0,width2,height2);
 		bmp2.changed = true;
 		var l = bmp2;
@@ -3878,7 +5378,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 		if(-13421773 >>> 24 != 255) {
 			_this.c2d.clearRect(0,0,width,height);
 		}
-		_this.c2d.fillStyle = "rgba(" + (-13421773 >>> 16 & 255) + ", " + (-13421773 >>> 8 & 255) + ", " + (-13421773 & 255) + ", " + (-13421773 >>> 24) / 255 + ")";
+		_this.c2d.fillStyle = "rgba(" + (-13421773 >>> 16 & 255) + "," + (-13421773 >>> 8 & 255) + "," + (-13421773 & 255) + "," + (-13421773 >>> 24) / 255 + ")";
 		_this.c2d.fillRect(0,0,width,height);
 		_this.changed = true;
 	}
@@ -3922,7 +5422,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 						if(-6710887 >>> 24 != 255) {
 							target.c2d.clearRect(x1,y,1,1);
 						}
-						target.c2d.fillStyle = "rgba(" + (-6710887 >>> 16 & 255) + ", " + (-6710887 >>> 8 & 255) + ", " + (-6710887 & 255) + ", " + (-6710887 >>> 24) / 255 + ")";
+						target.c2d.fillStyle = "rgba(" + (-6710887 >>> 16 & 255) + "," + (-6710887 >>> 8 & 255) + "," + (-6710887 & 255) + "," + (-6710887 >>> 24) / 255 + ")";
 						target.c2d.fillRect(x1,y,1,1);
 						target.changed = true;
 						target.changed = true;
@@ -3943,7 +5443,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 					if(-10066330 >>> 24 != 255) {
 						target1.c2d.clearRect(x2,y1,1,1);
 					}
-					target1.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + ", " + (-10066330 >>> 8 & 255) + ", " + (-10066330 & 255) + ", " + (-10066330 >>> 24) / 255 + ")";
+					target1.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + "," + (-10066330 >>> 8 & 255) + "," + (-10066330 & 255) + "," + (-10066330 >>> 24) / 255 + ")";
 					target1.c2d.fillRect(x2,y1,1,1);
 					target1.changed = true;
 					target1.changed = true;
@@ -3964,7 +5464,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 						if(-6710887 >>> 24 != 255) {
 							target2.c2d.clearRect(x3,y2,1,1);
 						}
-						target2.c2d.fillStyle = "rgba(" + (-6710887 >>> 16 & 255) + ", " + (-6710887 >>> 8 & 255) + ", " + (-6710887 & 255) + ", " + (-6710887 >>> 24) / 255 + ")";
+						target2.c2d.fillStyle = "rgba(" + (-6710887 >>> 16 & 255) + "," + (-6710887 >>> 8 & 255) + "," + (-6710887 & 255) + "," + (-6710887 >>> 24) / 255 + ")";
 						target2.c2d.fillRect(x3,y2,1,1);
 						target2.changed = true;
 						target2.changed = true;
@@ -3985,7 +5485,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 					if(-10066330 >>> 24 != 255) {
 						target3.c2d.clearRect(x4,y3,1,1);
 					}
-					target3.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + ", " + (-10066330 >>> 8 & 255) + ", " + (-10066330 & 255) + ", " + (-10066330 >>> 24) / 255 + ")";
+					target3.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + "," + (-10066330 >>> 8 & 255) + "," + (-10066330 & 255) + "," + (-10066330 >>> 24) / 255 + ")";
 					target3.c2d.fillRect(x4,y3,1,1);
 					target3.changed = true;
 					target3.changed = true;
@@ -4006,7 +5506,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 						if(-6710887 >>> 24 != 255) {
 							target4.c2d.clearRect(x5,y4,1,1);
 						}
-						target4.c2d.fillStyle = "rgba(" + (-6710887 >>> 16 & 255) + ", " + (-6710887 >>> 8 & 255) + ", " + (-6710887 & 255) + ", " + (-6710887 >>> 24) / 255 + ")";
+						target4.c2d.fillStyle = "rgba(" + (-6710887 >>> 16 & 255) + "," + (-6710887 >>> 8 & 255) + "," + (-6710887 & 255) + "," + (-6710887 >>> 24) / 255 + ")";
 						target4.c2d.fillRect(x5,y4,1,1);
 						target4.changed = true;
 						target4.changed = true;
@@ -4028,7 +5528,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 						if(-10066330 >>> 24 != 255) {
 							target5.c2d.clearRect(x6,y5,1,1);
 						}
-						target5.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + ", " + (-10066330 >>> 8 & 255) + ", " + (-10066330 & 255) + ", " + (-10066330 >>> 24) / 255 + ")";
+						target5.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + "," + (-10066330 >>> 8 & 255) + "," + (-10066330 & 255) + "," + (-10066330 >>> 24) / 255 + ")";
 						target5.c2d.fillRect(x6,y5,1,1);
 						target5.changed = true;
 						target5.changed = true;
@@ -4050,7 +5550,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 						if(-6710887 >>> 24 != 255) {
 							target6.c2d.clearRect(x7,y6,1,1);
 						}
-						target6.c2d.fillStyle = "rgba(" + (-6710887 >>> 16 & 255) + ", " + (-6710887 >>> 8 & 255) + ", " + (-6710887 & 255) + ", " + (-6710887 >>> 24) / 255 + ")";
+						target6.c2d.fillStyle = "rgba(" + (-6710887 >>> 16 & 255) + "," + (-6710887 >>> 8 & 255) + "," + (-6710887 & 255) + "," + (-6710887 >>> 24) / 255 + ")";
 						target6.c2d.fillRect(x7,y6,1,1);
 						target6.changed = true;
 						target6.changed = true;
@@ -4072,7 +5572,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 						if(-10066330 >>> 24 != 255) {
 							target7.c2d.clearRect(x8,y7,1,1);
 						}
-						target7.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + ", " + (-10066330 >>> 8 & 255) + ", " + (-10066330 & 255) + ", " + (-10066330 >>> 24) / 255 + ")";
+						target7.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + "," + (-10066330 >>> 8 & 255) + "," + (-10066330 & 255) + "," + (-10066330 >>> 24) / 255 + ")";
 						target7.c2d.fillRect(x8,y7,1,1);
 						target7.changed = true;
 						target7.changed = true;
@@ -4091,19 +5591,6 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 				var src = this.load[shown1 >> 2];
 				_this.c2d.drawImage(src["native"],0,0,src.width,src.height,rectX,rectY,src.width,src.height);
 				_this.changed = true;
-				if(_this.changed) {
-					var data8 = _this.c2d.getImageData(0,0,_this.width,_this.height).data;
-					var j = 0;
-					var _g11 = 0;
-					var _g9 = _this.size32;
-					while(_g11 < _g9) {
-						var i = _g11++;
-						var this9 = data8[j + 3] << 24 | data8[j] << 16 | data8[j + 1] << 8 | data8[j + 2];
-						_this.data[i] = this9;
-						j += 4;
-					}
-					_this.changed = false;
-				}
 				tmp = sk_thenet_app__$TNPreloader_TNPhase.Load(shown1 + 1);
 			}
 			break;
@@ -4114,28 +5601,15 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 				var src1 = this.logo;
 				_this1.c2d.drawImage(src1["native"],0,0,src1.width,src1.height,rectX,rectY,src1.width,src1.height);
 				_this1.changed = true;
-				if(_this1.changed) {
-					var data81 = _this1.c2d.getImageData(0,0,_this1.width,_this1.height).data;
-					var j1 = 0;
-					var _g12 = 0;
-					var _g10 = _this1.size32;
-					while(_g12 < _g10) {
-						var i1 = _g12++;
-						var this10 = data81[j1 + 3] << 24 | data81[j1] << 16 | data81[j1 + 1] << 8 | data81[j1 + 2];
-						_this1.data[i1] = this10;
-						j1 += 4;
-					}
-					_this1.changed = false;
-				}
 				tmp = sk_thenet_app__$TNPreloader_TNPhase.Waiting(10,sk_thenet_app__$TNPreloader_TNPhase.LogoBlip(0));
 			} else {
 				var shown3 = _g[2];
-				var this11 = this.logoAppear;
-				var this12 = new sk_thenet_bmp_manip_Cut(0,0,64,64).extract(this11);
-				var this13 = this12;
-				new sk_thenet_bmp_manip_Threshold(255 - shown3 - 10).manipulate(this13);
-				var this14 = this13;
-				var mask1 = this14;
+				var this9 = this.logoAppear;
+				var this10 = new sk_thenet_bmp_manip_Cut(0,0,64,64).extract(this9);
+				var this11 = this10;
+				new sk_thenet_bmp_manip_Threshold(255 - shown3 - 10).manipulate(this11);
+				var this12 = this11;
+				var mask1 = this12;
 				var canvas = window.document.createElement("canvas");
 				canvas.width = 64;
 				canvas.height = 64;
@@ -4145,57 +5619,31 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 				if(-10066330 >>> 24 != 255) {
 					bmp.c2d.clearRect(0,0,width,height);
 				}
-				bmp.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + ", " + (-10066330 >>> 8 & 255) + ", " + (-10066330 & 255) + ", " + (-10066330 >>> 24) / 255 + ")";
+				bmp.c2d.fillStyle = "rgba(" + (-10066330 >>> 16 & 255) + "," + (-10066330 >>> 8 & 255) + "," + (-10066330 & 255) + "," + (-10066330 >>> 24) / 255 + ")";
 				bmp.c2d.fillRect(0,0,width,height);
 				bmp.changed = true;
-				var this15 = bmp;
-				var this16 = this15;
-				new sk_thenet_bmp_manip_AlphaMask(mask1).manipulate(this16);
-				var this17 = this16;
-				var grayMasked = this17;
+				var this13 = bmp;
+				var this14 = this13;
+				new sk_thenet_bmp_manip_AlphaMask(mask1).manipulate(this14);
+				var this15 = this14;
+				var grayMasked = this15;
 				var _this2 = this.app.bitmap;
 				_this2.c2d.drawImage(grayMasked["native"],0,0,grayMasked.width,grayMasked.height,rectX,rectY,grayMasked.width,grayMasked.height);
 				_this2.changed = true;
-				if(_this2.changed) {
-					var data82 = _this2.c2d.getImageData(0,0,_this2.width,_this2.height).data;
-					var j2 = 0;
-					var _g13 = 0;
-					var _g14 = _this2.size32;
-					while(_g13 < _g14) {
-						var i2 = _g13++;
-						var this18 = data82[j2 + 3] << 24 | data82[j2] << 16 | data82[j2 + 1] << 8 | data82[j2 + 2];
-						_this2.data[i2] = this18;
-						j2 += 4;
-					}
-					_this2.changed = false;
-				}
-				var this19 = this.logoAppear;
-				var this20 = new sk_thenet_bmp_manip_Cut(0,0,64,64).extract(this19);
-				var this21 = this20;
-				new sk_thenet_bmp_manip_Threshold(255 - shown3).manipulate(this21);
-				var this22 = this21;
-				var mask2 = this22;
-				var this23 = this.logo;
-				var this24 = new sk_thenet_bmp_manip_Cut(0,0,64,64).extract(this23);
-				var logoMasked = this24;
+				var this16 = this.logoAppear;
+				var this17 = new sk_thenet_bmp_manip_Cut(0,0,64,64).extract(this16);
+				var this18 = this17;
+				new sk_thenet_bmp_manip_Threshold(255 - shown3).manipulate(this18);
+				var this19 = this18;
+				var mask2 = this19;
+				var this20 = this.logo;
+				var this21 = new sk_thenet_bmp_manip_Cut(0,0,64,64).extract(this20);
+				var logoMasked = this21;
 				new sk_thenet_bmp_manip_AlphaMask(mask2).manipulate(logoMasked);
-				var this25 = logoMasked;
+				var this22 = logoMasked;
 				var _this3 = this.app.bitmap;
 				_this3.c2d.drawImage(logoMasked["native"],0,0,logoMasked.width,logoMasked.height,rectX,rectY,logoMasked.width,logoMasked.height);
 				_this3.changed = true;
-				if(_this3.changed) {
-					var data83 = _this3.c2d.getImageData(0,0,_this3.width,_this3.height).data;
-					var j3 = 0;
-					var _g15 = 0;
-					var _g16 = _this3.size32;
-					while(_g15 < _g16) {
-						var i3 = _g15++;
-						var this26 = data83[j3 + 3] << 24 | data83[j3] << 16 | data83[j3 + 1] << 8 | data83[j3 + 2];
-						_this3.data[i3] = this26;
-						j3 += 4;
-					}
-					_this3.changed = false;
-				}
 				if(this.loaded > shown3) {
 					var x9 = shown3 + 4;
 					var y8 = this.loaded;
@@ -4220,7 +5668,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 				if(colour >>> 24 != 255) {
 					_this4.c2d.clearRect(x10,y9,24,4);
 				}
-				_this4.c2d.fillStyle = "rgba(" + (colour >>> 16 & 255) + ", " + (colour >>> 8 & 255) + ", " + (colour & 255) + ", " + (colour >>> 24) / 255 + ")";
+				_this4.c2d.fillStyle = "rgba(" + (colour >>> 16 & 255) + "," + (colour >>> 8 & 255) + "," + (colour & 255) + "," + (colour >>> 24) / 255 + ")";
 				_this4.c2d.fillRect(x10,y9,24,4);
 				_this4.changed = true;
 				var _this5 = this.app.bitmap;
@@ -4230,7 +5678,7 @@ sk_thenet_app_TNPreloader.prototype = $extend(sk_thenet_app_Preloader.prototype,
 				if(colour1 >>> 24 != 255) {
 					_this5.c2d.clearRect(x11,y10,4,4);
 				}
-				_this5.c2d.fillStyle = "rgba(" + (colour1 >>> 16 & 255) + ", " + (colour1 >>> 8 & 255) + ", " + (colour1 & 255) + ", " + (colour1 >>> 24) / 255 + ")";
+				_this5.c2d.fillStyle = "rgba(" + (colour1 >>> 16 & 255) + "," + (colour1 >>> 8 & 255) + "," + (colour1 & 255) + "," + (colour1 >>> 24) / 255 + ")";
 				_this5.c2d.fillRect(x11,y10,4,4);
 				_this5.changed = true;
 				tmp = sk_thenet_app__$TNPreloader_TNPhase.LogoBlip(shown4 + 1);
@@ -4960,7 +6408,7 @@ sk_thenet_format_bmp_PNG.prototype = {
 		if(0 >>> 24 != 255) {
 			bmp.c2d.clearRect(0,0,width,height);
 		}
-		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp.c2d.fillRect(0,0,width,height);
 		bmp.changed = true;
 		var ret = bmp;
@@ -5172,7 +6620,7 @@ var sk_thenet_app_asset_Bitmap = function(id,filename,initial) {
 		if(0 >>> 24 != 255) {
 			bmp.c2d.clearRect(0,0,width,height);
 		}
-		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp.c2d.fillRect(0,0,width,height);
 		bmp.changed = true;
 		this.current = bmp;
@@ -5200,6 +6648,28 @@ sk_thenet_app_asset_Bitmap.prototype = $extend(sk_thenet_app_Asset.prototype,{
 	}
 	,__class__: sk_thenet_app_asset_Bitmap
 });
+var sk_thenet_app_asset_Sound = function(id,filename,initial) {
+	sk_thenet_app_Asset.call(this,sk_thenet_app_AssetType.Sound,id,filename);
+	if(initial == null) {
+		this.status = sk_thenet_app_AssetStatus.Loading(0);
+	} else {
+		this.current = initial;
+		this.status = sk_thenet_app_AssetStatus.Loaded;
+	}
+};
+sk_thenet_app_asset_Sound.__name__ = true;
+sk_thenet_app_asset_Sound.__super__ = sk_thenet_app_Asset;
+sk_thenet_app_asset_Sound.prototype = $extend(sk_thenet_app_Asset.prototype,{
+	update: function(data) {
+	}
+	,updateSound: function(data) {
+		this.current = data;
+		this.status = sk_thenet_app_AssetStatus.Loaded;
+		sk_thenet_app_Asset.prototype.update.call(this,null);
+		this.manager.updateLoad(this.id);
+	}
+	,__class__: sk_thenet_app_asset_Sound
+});
 var sk_thenet_app_asset_Trigger = function(id,bindTo,func) {
 	var _gthis = this;
 	sk_thenet_app_asset_Bind.call(this,bindTo,function(assetManager,event) {
@@ -5218,6 +6688,16 @@ sk_thenet_app_asset_Trigger.prototype = $extend(sk_thenet_app_asset_Bind.prototy
 });
 var sk_thenet_audio_IOutput = function() { };
 sk_thenet_audio_IOutput.__name__ = true;
+var sk_thenet_audio_ISound = function() { };
+sk_thenet_audio_ISound.__name__ = true;
+var sk_thenet_audio_LoopMode = { __ename__ : true, __constructs__ : ["Once","Forever","Loop"] };
+sk_thenet_audio_LoopMode.Once = ["Once",0];
+sk_thenet_audio_LoopMode.Once.toString = $estr;
+sk_thenet_audio_LoopMode.Once.__enum__ = sk_thenet_audio_LoopMode;
+sk_thenet_audio_LoopMode.Forever = ["Forever",1];
+sk_thenet_audio_LoopMode.Forever.toString = $estr;
+sk_thenet_audio_LoopMode.Forever.__enum__ = sk_thenet_audio_LoopMode;
+sk_thenet_audio_LoopMode.Loop = function(amount) { var $x = ["Loop",2,amount]; $x.__enum__ = sk_thenet_audio_LoopMode; $x.toString = $estr; return $x; };
 var sk_thenet_bmp_Font = function(data,offset,rects) {
 	this.data = data;
 	this.offset = offset;
@@ -5268,7 +6748,7 @@ sk_thenet_bmp_Font.spreadGrid = function(data,characterWidth,characterHeight,add
 	if(0 >>> 24 != 255) {
 		bmp.c2d.clearRect(0,0,width,height);
 	}
-	bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+	bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 	bmp.c2d.fillRect(0,0,width,height);
 	bmp.changed = true;
 	var ret = bmp;
@@ -5287,29 +6767,62 @@ sk_thenet_bmp_Font.spreadGrid = function(data,characterWidth,characterHeight,add
 	return ret;
 };
 sk_thenet_bmp_Font.prototype = {
-	render: function(target,x,y,text) {
+	render: function(target,x,y,text,sx,sy,fbuffer) {
+		if(sx == null) {
+			sx = x;
+		}
+		if(sy == null) {
+			sy = y;
+		}
 		var cx = x;
 		var cy = y;
+		var xmax = x;
+		var ymax = y;
 		var _g1 = 0;
 		var _g = text.length;
 		while(_g1 < _g) {
 			var i = _g1++;
 			var ch = text.charAt(i);
 			var cc = HxOverrides.cca(text,i);
-			if(ch == "\n") {
-				cx = x;
-				cy += this.rects[3];
-			} else if(cc >= this.offset && cc < this.offset + this.rects.length) {
-				cc = (cc - this.offset) * 6;
-				if(cx >= 0 && cx <= target.width - 1 && (cy >= 0 && cy <= target.height - 1)) {
-					var srcW = this.rects[cc + 2];
-					var srcH = this.rects[cc + 3];
-					target.c2d.drawImage(this.data["native"],this.rects[cc],this.rects[cc + 1],srcW,srcH,cx,cy,srcW,srcH);
-					target.changed = true;
+			switch(ch) {
+			case "\n":
+				cx = sx;
+				cy += this.rects[5];
+				break;
+			case "$":
+				if(fbuffer != null) {
+					return fbuffer[HxOverrides.cca(text,i + 1) - 65].render(target,cx,cy,HxOverrides.substr(text,i + 2,null),sx,sy,fbuffer);
+				} else if(cc >= this.offset && cc < this.offset + this.rects.length) {
+					cc = (cc - this.offset) * 6;
+					if(cx >= -this.rects[cc + 2] && cx <= target.width - 1 + this.rects[cc + 2] && (cy >= -this.rects[cc + 3] && cy <= target.height - 1 + this.rects[cc + 3])) {
+						var srcW = this.rects[cc + 2];
+						var srcH = this.rects[cc + 3];
+						target.c2d.drawImage(this.data["native"],this.rects[cc],this.rects[cc + 1],srcW,srcH,cx,cy,srcW,srcH);
+						target.changed = true;
+					}
+					cx += this.rects[cc + 4];
 				}
-				cx += this.rects[cc + 4];
+				break;
+			default:
+				if(cc >= this.offset && cc < this.offset + this.rects.length) {
+					cc = (cc - this.offset) * 6;
+					if(cx >= -this.rects[cc + 2] && cx <= target.width - 1 + this.rects[cc + 2] && (cy >= -this.rects[cc + 3] && cy <= target.height - 1 + this.rects[cc + 3])) {
+						var srcW1 = this.rects[cc + 2];
+						var srcH1 = this.rects[cc + 3];
+						target.c2d.drawImage(this.data["native"],this.rects[cc],this.rects[cc + 1],srcW1,srcH1,cx,cy,srcW1,srcH1);
+						target.changed = true;
+					}
+					cx += this.rects[cc + 4];
+				}
+			}
+			if(cx + this.rects[cc + 4] > xmax) {
+				xmax = cx + this.rects[cc + 4];
+			}
+			if(cy + this.rects[5] > ymax) {
+				ymax = cy + this.rects[5];
 			}
 		}
+		return new sk_thenet_geom_Point2DI(xmax,ymax);
 	}
 	,__class__: sk_thenet_bmp_Font
 };
@@ -5380,7 +6893,7 @@ sk_thenet_bmp_VectorManipulator.prototype = $extend(sk_thenet_bmp_Manipulator.pr
 		if(0 >>> 24 != 255) {
 			bmp.c2d.clearRect(0,0,width1,height1);
 		}
-		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp.c2d.fillRect(0,0,width1,height1);
 		bmp.changed = true;
 		var ret = bmp;
@@ -5563,7 +7076,7 @@ sk_thenet_bmp_manip_Cut.prototype = $extend(sk_thenet_bmp_Manipulator.prototype,
 		if(0 >>> 24 != 255) {
 			bmp.c2d.clearRect(0,0,width1,height1);
 		}
-		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp.c2d.fillRect(0,0,width1,height1);
 		bmp.changed = true;
 		var ret = bmp;
@@ -5673,7 +7186,7 @@ sk_thenet_bmp_manip_Recolour.prototype = $extend(sk_thenet_bmp_VectorManipulator
 		if(0 >>> 24 != 255) {
 			bmp.c2d.clearRect(0,0,width1,height1);
 		}
-		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp.c2d.fillRect(0,0,width1,height1);
 		bmp.changed = true;
 		var ret = bmp;
@@ -5776,7 +7289,7 @@ sk_thenet_bmp_manip_Rotate.prototype = $extend(sk_thenet_bmp_Manipulator.prototy
 		if(0 >>> 24 != 255) {
 			bmp.c2d.clearRect(0,0,width1,height1);
 		}
-		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp.c2d.fillRect(0,0,width1,height1);
 		bmp.changed = true;
 		var ret = bmp;
@@ -5961,7 +7474,7 @@ sk_thenet_bmp_manip_Threshold.prototype = $extend(sk_thenet_bmp_VectorManipulato
 		if(0 >>> 24 != 255) {
 			bmp.c2d.clearRect(0,0,width1,height1);
 		}
-		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + ", " + (0 >>> 8 & 255) + ", " + (0 & 255) + ", " + (0 >>> 24) / 255 + ")";
+		bmp.c2d.fillStyle = "rgba(" + (0 >>> 16 & 255) + "," + (0 >>> 8 & 255) + "," + (0 & 255) + "," + (0 >>> 24) / 255 + ")";
 		bmp.c2d.fillRect(0,0,width1,height1);
 		bmp.changed = true;
 		var ret = bmp;
@@ -6162,14 +7675,6 @@ sk_thenet_event_ETick.__super__ = sk_thenet_event_Event;
 sk_thenet_event_ETick.prototype = $extend(sk_thenet_event_Event.prototype,{
 	__class__: sk_thenet_event_ETick
 });
-var sk_thenet_geom_Point2DI = function(x,y) {
-	this.x = x;
-	this.y = y;
-};
-sk_thenet_geom_Point2DI.__name__ = true;
-sk_thenet_geom_Point2DI.prototype = {
-	__class__: sk_thenet_geom_Point2DI
-};
 var sk_thenet_geom_Quaternion = function(a,b,c,d) {
 	this.a = a;
 	this.b = b;
@@ -6303,6 +7808,22 @@ sk_thenet_plat_js_canvas_app_Embed.getBitmap = function(id,file) {
 	};
 	return ret;
 };
+sk_thenet_plat_js_canvas_app_Embed.getSound = function(id,file) {
+	var ret = new sk_thenet_app_asset_Sound(id,file);
+	ret.preload = function() {
+		var audio = new Audio();
+		audio.oncanplaythrough = function() {
+			var sound = new sk_thenet_plat_js_common_audio_Sound(audio);
+			ret.updateSound(sound);
+		};
+		audio.src = file;
+		audio.preload = "auto";
+		audio.load();
+		audio.volume = 0;
+		audio.play();
+	};
+	return ret;
+};
 var sk_thenet_plat_js_canvas_bmp_Bitmap = function($native,c2d) {
 	this["native"] = $native;
 	this.width = $native.width;
@@ -6339,10 +7860,7 @@ var sk_thenet_plat_js_canvas_bmp_Bitmap = function($native,c2d) {
 sk_thenet_plat_js_canvas_bmp_Bitmap.__name__ = true;
 sk_thenet_plat_js_canvas_bmp_Bitmap.__interfaces__ = [sk_thenet_bmp_IBitmap];
 sk_thenet_plat_js_canvas_bmp_Bitmap.prototype = {
-	debug: function() {
-		window.document.body.appendChild(this["native"]);
-	}
-	,getVectorRect: function(x,y,width,height) {
+	getVectorRect: function(x,y,width,height) {
 		var max = this.width;
 		if(x < 0) {
 			x = 0;
@@ -6838,6 +8356,57 @@ sk_thenet_plat_js_common_audio_Output.prototype = {
 	}
 	,__class__: sk_thenet_plat_js_common_audio_Output
 };
+var sk_thenet_plat_js_common_audio_Sound = function(sound) {
+	this.sound = sound;
+	this.channels = [];
+	this.pool = [];
+};
+sk_thenet_plat_js_common_audio_Sound.__name__ = true;
+sk_thenet_plat_js_common_audio_Sound.__interfaces__ = [sk_thenet_audio_ISound];
+sk_thenet_plat_js_common_audio_Sound.prototype = {
+	play: function(mode) {
+		var _gthis = this;
+		var channel = null;
+		if(this.pool.length > 0) {
+			channel = this.pool.shift();
+		} else {
+			channel = this.sound.cloneNode();
+		}
+		var tmp;
+		if(mode == null) {
+			tmp = null;
+		} else {
+			switch(mode[1]) {
+			case 1:
+				tmp = function() {
+					channel.currentTime = 0;
+					channel.play();
+				};
+				break;
+			case 2:
+				var amount = mode[2];
+				var counter = amount;
+				tmp = function() {
+					counter -= 1;
+					if(counter > 0) {
+						channel.currentTime = 0;
+						channel.play();
+					} else {
+						HxOverrides.remove(_gthis.channels,channel);
+						_gthis.pool.push(channel);
+					}
+				};
+				break;
+			default:
+				tmp = null;
+			}
+		}
+		channel.onended = tmp;
+		channel.play();
+		this.channels.push(channel);
+	}
+	,__class__: sk_thenet_plat_js_common_audio_Sound
+};
 var sk_thenet_plat_js_common_net_ws_Websocket = function() {
 	this.handshake = false;
 	this.connected = false;
@@ -6905,6 +8474,7 @@ var sk_thenet_stream_bmp_Bresenham = function(from,to,ray) {
 	var x2 = to.y - y;
 	var dy = (x2 ^ x2 >> 31) - (x2 >> 31);
 	var sy = y < to.y ? 1 : -1;
+	this.yLong = dy > dx;
 	var err = (dx > dy ? dx : -dy) / 2;
 	var finished = false;
 	sk_thenet_stream_Stream.call(this,ray ? sk_thenet_stream_Stream.always : function() {
@@ -6945,6 +8515,8 @@ function $bind(o,m) { if( m == null ) return null; if( m.__id__ == null ) m.__id
 String.prototype.__class__ = String;
 String.__name__ = true;
 Array.__name__ = true;
+Date.prototype.__class__ = Date;
+Date.__name__ = ["Date"];
 var Int = { __name__ : ["Int"]};
 var Dynamic = { __name__ : ["Dynamic"]};
 var Float = Number;
@@ -6960,10 +8532,29 @@ if(ArrayBuffer.prototype.slice == null) {
 }
 var Float32Array = $global.Float32Array || js_html_compat_Float32Array._new;
 var Uint8Array = $global.Uint8Array || js_html_compat_Uint8Array._new;
+GeodesicRender.Y_OFFSET = 70;
+GeodesicRender.Y_SCALE = .93;
+GeodesicRender.CENTER = new sk_thenet_geom_Point2DI(200,112 + GeodesicRender.Y_OFFSET);
+GeodesicRender.VIEW = (function($this) {
+	var $r;
+	var _this_z;
+	var _this_y;
+	var _this_x = 0;
+	_this_y = -.5;
+	_this_z = 1;
+	var factor = 1 / Math.sqrt(_this_x * _this_x + _this_y * _this_y + _this_z * _this_z);
+	$r = new sk_thenet_geom_Point3DF(_this_x * factor,_this_y * factor,_this_z * factor);
+	return $r;
+}(this));
 Main.WIDTH = 400;
 Main.HEIGHT = 225;
 Main.HWIDTH = 200;
 Main.HHEIGHT = 112;
+common_GameState.DAMAGE_TABLE = [0,0,1,0,0,8,3,0,0,5,0,0,2,1,1,9,4,0,0,5,0,0,1,1,1,9,4,0,0,5,0,1,3,2,2,10,5,0,0,5,0,0,1,1,1,9,4,0,0,5,0,1,3,2,2,10,5,0,0,5,0,1,3,2,2,10,5,0,0,5,0,1,3,2,2,10,5,0,0,5,0,1,3,2,6,10,5,0,0,5].slice(0);
+common_Unit.ORDERS = [{ name : "Cancel", tooltip : "Deselect the tile.", type : common_OrderType.Cancel},{ name : "Skip", tooltip : "Do nothing with this unit.", type : common_OrderType.Skip},{ name : "Capture", tooltip : "Attempt to capture the tile this unit is on.", type : common_OrderType.Capture},{ name : "Shield", tooltip : "Raise shields on this tile.", type : common_OrderType.Shield},{ name : "Abandon", tooltip : "Abandon this tile.", type : common_OrderType.Abandon},{ name : "Undo", tooltip : "Undoes the turn of this unit.", type : common_OrderType.Undo},{ name : "Build", tooltip : "Build a unit here.", type : common_OrderType.Build},{ name : "Stop build", tooltip : "Cancels the unit being built.\nResources are returned.", type : common_OrderType.BuildCancel}].slice(0);
+common_Unit.HOME_LAND_ORDERS = [3];
+common_Unit.AWAY_LAND_ORDERS = [2];
+common_Unit.UNITS = [new common_Unit(0,"Generator",{ hp : 10, maxHp : 10, mp : 1, atk : 0, def : 2, ran : 0},[1]),new common_Unit(1,"Starlight Catcher",{ hp : 2, maxHp : 2, mp : 1, atk : 1, def : 1, ran : 1},[1,2]),new common_Unit(2,"Boot",{ hp : 5, maxHp : 5, mp : 2, atk : 3, def : 1, ran : 1},[1,2]),new common_Unit(3,"Bow and Arrow",{ hp : 4, maxHp : 4, mp : 2, atk : 2, def : 0, ran : 2},[1,2]),new common_Unit(4,"Trebuchet",{ hp : 1, maxHp : 1, mp : 1, atk : 2, def : 1, ran : 2},[1,2]),new common_Unit(5,"Stick of Dynamite",{ hp : 1, maxHp : 1, mp : 2, atk : 10, def : 0, ran : 0},[1]),new common_Unit(6,"Cloak and Dagger",{ hp : 1, maxHp : 1, mp : 3, atk : 5, def : 0, ran : 1},[1,2])].slice(0);
 haxe_zip_InflateImpl.LEN_EXTRA_BITS_TBL = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,-1,-1];
 haxe_zip_InflateImpl.LEN_BASE_VAL_TBL = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
 haxe_zip_InflateImpl.DIST_EXTRA_BITS_TBL = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,-1,-1];
@@ -6973,12 +8564,23 @@ js_Boot.__toStr = ({ }).toString;
 js_html_compat_Float32Array.BYTES_PER_ELEMENT = 4;
 js_html_compat_Uint8Array.BYTES_PER_ELEMENT = 1;
 sk_thenet_FM.prng = sk_thenet_stream_prng__$Generator_Generator_$Impl_$._new(new sk_thenet_stream_prng_XORShift(-88652429));
+sk_thenet_anim__$Timing_Timing_$Impl_$.quadOut = function(x) {
+	return -x * (x - 2);
+};
 sk_thenet_anim__$Timing_Timing_$Impl_$.quadInOut = function(x) {
 	if(x < .5) {
 		return 2 * x * x;
 	} else {
 		x = 2 * x - 2;
 		return -.5 * x * x + 1;
+	}
+};
+sk_thenet_anim__$Timing_Timing_$Impl_$.cubicInOut = function(x) {
+	if(x < .5) {
+		return 4 * x * x * x;
+	} else {
+		x = 2 * x - 2;
+		return .5 * x * x * x + 1;
 	}
 };
 sk_thenet_app_Keyboard.KEY_CHARACTERS = " 0123456789abcdefghijklmnopqrstuvwxyz \n";

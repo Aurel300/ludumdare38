@@ -302,7 +302,7 @@ class GeodesicRender {
           ,tile.spriteX - 24 - FM.floor(tile.spriteOX * (sel ? 5.5 : 2.5))
           ,tile.spriteY - 24 - FM.floor(tile.spriteOY * (sel ? 5.5 : 2.5))
         );
-      if (moved != null){
+      if (moved != null && GameState.unitFac[ti] == GameState.currentFaction){
         bmp.blitAlpha(
              moved
             ,tile.spriteX - 12 - FM.floor(tile.spriteOX * (sel ? 5.5 : 2.5))

@@ -7,13 +7,16 @@ import sk.thenet.FM;
 class GameState {
   public static inline var TILES:Int = 320;
   
+  // clients
   public static var currentFaction(default, null):Int;
   public static var currentMoves  (default, null):Array<Move>;
   public static var currentClicks (default, null):Vector<Move>;
   public static var currentSL     (default, null):Int;
   public static var currentNRG    (default, null):Int;
   public static var maxNRG        (default, null):Int;
+  public static var turned        (default, null):Vector<MoveStatus>;
   
+  // server
   public static var height (default, null):Vector<Float>;
   public static var faction(default, null):Vector<Int>;
   public static var name   (default, null):Array<String>;
@@ -21,10 +24,45 @@ class GameState {
   public static var unitFac(default, null):Vector<Int>;
   public static var stats  (default, null):Vector<Stats>;
   public static var star   (default, null):Vector<Int>;
-  public static var turned (default, null):Vector<MoveStatus>;
   public static var shield (default, null):Vector<Unit>;
+  public static var ticker (default, null):Date;
+  public static var period (default, null):Float;
   
   private static var ico:Geodesic;
+  private static var latestCurrentMoves:Map<Int, Array<Move>>;
+  private static var latestTurned      :Map<Int, Array<Int>>;
+  
+  public static function untilTicker():Int {
+    var diff:Float = Date.now().getTime() - ticker.getTime();
+    if (diff > period){
+      return 0;
+    }
+    return FM.floor((period - diff) / 1000);
+  }
+  
+  public static function tick():Void {
+    ticker = Date.now();
+    for (ms in latestCurrentMoves){
+      for (m in ms){
+        currentMoves.push(m);
+      }
+    }
+    latestCurrentMoves = new Map();
+    for (f in latestTurned.keys()){
+      var ft = latestTurned.get(f);
+      for (ti in 0...ft.length){
+        if (unitFac[ti] == f){
+          turned[ti] = ft[ti];
+        }
+      }
+    }
+    latestTurned = new Map();
+    turn();
+  }
+  
+  public static function encodeTicker():String {
+    return Json.stringify({t: ticker.getTime()});
+  }
   
   public static function encodeMaster():String {
     return Json.stringify({
@@ -35,8 +73,9 @@ class GameState {
         ,uf: unitFac.toArray()
         ,s: stats.toArray()
         //,sr: star.toArray()
-        //,t:
         //,sh:
+        ,t: ticker.getTime()
+        ,p: period
       });
   }
   
@@ -50,6 +89,13 @@ class GameState {
       });
   }
   
+  public static dynamic function encodeTurnSend():Void {}
+  
+  public static function decodeTicker(s:String):Void {
+    var obj = Json.parse(s);
+    ticker  = Date.fromTime(obj.t);
+  }
+  
   public static function decodeMaster(s:String):Void {
     var obj = Json.parse(s);
     height  = Vector.fromArrayCopy(obj.h);
@@ -59,32 +105,45 @@ class GameState {
     unitFac = Vector.fromArrayCopy(obj.uf);
     stats   = Vector.fromArrayCopy(obj.s);
     //star    = Vector.fromArrayCopy(obj.sr);
-    //turned  = Vector.fromArrayCopy(obj.t);
     //shield  = Vector.fromArrayCopy(obj.sh);
-  }
-  
-  public static function decodeTurn(s:String):Void {
-    var obj = Json.parse(s);
-    currentMoves = currentMoves.concat(obj.m.map(function(a:Array<Int>):Move {
-        return new Move(a[0], a[1], a[2]);
-      }));
-    var objt = (cast obj.t:Array<Int>);
-    for (t in 0...objt.length){
-      if (unitFac[t] == obj.f){
-        turned[t] = objt[t];
+    ticker  = Date.fromTime(obj.t);
+    period  = obj.p;
+    for (i in 0...TILES){
+      turned[i] = MoveStatus.None;
+      if (unit[i] != -1){
+        turned[i] = MoveStatus.Ready;
       }
     }
   }
   
-  public static function init(ico:Geodesic):Void {
+  public static function decodeTurn(s:String):Void {
+    var obj = Json.parse(s);
+    latestCurrentMoves.set(obj.f, currentMoves.concat(obj.m.map(function(a:Array<Int>):Move {
+        return new Move(a[0], a[1], a[2]);
+      })));
+    latestTurned.set(obj.f, obj.t);
+  }
+  
+  public static function initEmpty(ico:Geodesic):Void {
     GameState.ico = ico;
-    
     currentFaction = 0;
     currentMoves   = [];
     currentClicks  = new Vector(TILES);
     currentSL      = 5;
     currentNRG     = 11;
     maxNRG         = 15;
+    turned         = new Vector(TILES);
+    for (i in 0...TILES){
+      currentClicks[i] = null;
+      turned[i]        = MoveStatus.None;
+    }
+  }
+  
+  public static function init(ico:Geodesic):Void {
+    initEmpty(ico);
+    
+    latestCurrentMoves = new Map();
+    latestTurned = new Map();
     
     height  = new Vector(TILES);
     faction = new Vector(TILES);
@@ -93,33 +152,21 @@ class GameState {
     unitFac = new Vector(TILES);
     stats   = new Vector(TILES);
     star    = new Vector(TILES);
-    turned  = new Vector(TILES);
     shield  = new Vector(TILES);
+    ticker  = Date.now();
+    period  = 5 * 2 * 1000;
     for (i in 0...TILES){
       height[i]  = FM.prng.nextFloat(.2);
       faction[i] = -1;
       unit[i]    = -1;
       unitFac[i] = -1;
-      turned[i]  = MoveStatus.None;
       shield[i]  = null;
-      currentClicks[i] = null;
     }
     
     for (i in 0...1){
-      //spawnPlayer("asdf", i, FM.prng.nextMod(TILES));
       spawnPlayer("foo", 0, FM.prng.nextMod(TILES));
       spawnPlayer("bar", 1, FM.prng.nextMod(TILES));
     }
-    
-    /*
-    for (i in 0...40){
-      var fi = FM.prng.nextMod(TILES);
-      faction[fi] = FM.prng.nextMod(8);
-      unit[fi]    = FM.prng.nextMod(Unit.UNITS.length);
-      unitFac[fi] = FM.prng.nextMod(8);
-      turned[fi]  = MoveStatus.Ready;
-    }
-    */
   }
   
   public static function spawnPlayer(name:String, player:Int, t:Int):Void {
@@ -173,7 +220,7 @@ class GameState {
       ,0 , 1 , 3 , 2 , 6 , 10 , 5 , 0 , 0 , 5
     ]);
   
-  public static function resolveTurns():Void {
+  public static function turn():Void {
     var tilesAttacked = [];
     var attacks = currentMoves.filter(function(m) return m.type == Attack);
     while (attacks.length > 0){
@@ -225,17 +272,14 @@ class GameState {
       captureLand(cp.from);
     }
     currentMoves = [];
-  }
-  
-  public static function turn():Void {
-    resolveTurns();
+    
     for (i in 0...TILES){
       if (turned[i] == MoveStatus.Building){
         stats[i] = Unit.UNITS[unit[i]].cloneStats();
       }
       currentClicks[i] = null;
       turned[i] = MoveStatus.None;
-      if (unit[i] != -1 && unitFac[i] == currentFaction){
+      if (unit[i] != -1){
         turned[i] = MoveStatus.Ready;
       }
     }
