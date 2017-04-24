@@ -79,25 +79,38 @@ Column is attacker, line is defender.
 
  - [x] GUI drawers (opening / closing of a drawer? moving stuff on a wooden desk?)
  - [ ] GUI click (mechanical pen click?) (click in / click out separate)
+ - unit select:
+   - [ ] generator ???
+   - [ ] SL catcher
+   - [x] boot
+   - [x] bow and arrow
+   - [x] trebuchet
+   - [x] cloak and dagger
+ - unit arrow:
+   - [ ] SL catcher
+   - [ ] boot
+   - [x] bow and arrow
+   - [ ] trebuchet
+   - [ ] cloak and dagger
  - [ ] low time (štrkáč?)
  - [ ] unit movement (like in Civ 2)
- - [ ] unit attack
- - [ ] unit destroyed
  - [ ] land captured
  - [x] SL collected (coin sounds?)
  - [x] SL caught from sky
  - [ ] new player spawn = meteorite crash
+ - [ ] invalid action (trying to build without resources)
 
 ## Features / TODO ##
 
  - [ ] gameplay system
    - [x] design
    - [x] moving
+   - [x] attacking - range?
    - [ ] building
-   - [.] attacking
+   - [ ] resources
  - [ ] realtime multiplayer
    - [ ] "logins" / sessions
-   - [ ] gamestate
+   - [.] gamestate
      - [x] push turns
      - [x] resolve turns
      - [ ] animate turns back
@@ -113,6 +126,7 @@ Column is attacker, line is defender.
      - [x] selection
      - [.] rotation (rotate to tile automatically)
      - [ ] zoom
+   - [ ] better shading
    - [ ] space
    - [x] terrain
      - [ ] layers
