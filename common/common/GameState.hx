@@ -5,16 +5,20 @@ import haxe.ds.Vector;
 import sk.thenet.FM;
 
 class GameState {
+  public static inline var SINGLE:Bool = false;
   public static inline var TILES:Int = 320;
   
   // clients
+  public static var currentNick   (default, default):String;
   public static var currentColour (default, null):Int;
   public static var currentFaction(default, null):Int;
   public static var currentMoves  (default, null):Array<Move>;
   public static var currentClicks (default, null):Vector<Move>;
-  public static var currentSL     (default, null):Int;
-  public static var currentNRG    (default, null):Int;
-  public static var maxNRG        (default, null):Int;
+  public static var currentSL     (default, default):Int;
+  public static var currentNRG    (default, default):Int;
+  public static var currentIncome (default, default):Int;
+  public static var currentIngest (default, default):Int;
+  public static var maxNRG        (default, default):Int;
   public static var turned        (default, null):Vector<MoveStatus>;
   
   // server
@@ -24,6 +28,8 @@ class GameState {
   public static var sl     (default, null):Array<Int>;
   public static var nrg    (default, null):Array<Int>;
   public static var maxnrg (default, null):Array<Int>;
+  public static var income (default, null):Array<Int>;
+  public static var ingest (default, null):Array<Int>;
   
   public static var height (default, null):Vector<Float>;
   public static var faction(default, null):Vector<Int>;
@@ -37,7 +43,8 @@ class GameState {
   
   private static var ico:Geodesic;
   private static var latestCurrentMoves:Map<Int, Array<Move>>;
-  //private static var latestTurned      :Map<Int, Array<Int>>;
+  
+  public static var leaders:Array<String> = [];
   
   public static function selectNative(native:Int):Void {
     currentColour = native;
@@ -45,6 +52,18 @@ class GameState {
   
   public static function selectFaction(faction:Int):Void {
     currentFaction = faction;
+  }
+  
+  public static function getLeaders():Array<String> {
+    var scores:Array<{name:String, score:Int}> = [];
+    for (i in 0...fid.length){
+      scores.push({name: name[i], score: sl[i] + maxnrg[i]});
+    }
+    trace(name);
+    scores.sort(function(a, b):Int {
+        return b.score - a.score;
+      });
+    return [ for (i in 0...FM.minI(10, scores.length)) Std.string(i + 1) + ". " + scores[i].name + " (" + scores[i].score + ")" ];
   }
   
   public static function colourOf(faction:Int):Int {
@@ -66,6 +85,8 @@ class GameState {
     currentClicks  = new Vector(TILES);
     currentSL      = 5;
     currentNRG     = 11;
+    currentIncome  = 0;
+    currentIngest  = 0;
     maxNRG         = 15;
     turned         = new Vector(TILES);
     for (i in 0...TILES){
@@ -78,13 +99,14 @@ class GameState {
     sl      = [];
     nrg     = [];
     maxnrg  = [];
+    income  = [];
+    ingest  = [];
   }
   
   public static function init(ico:Geodesic):Void {
     initEmpty(ico);
     
     latestCurrentMoves = new Map();
-    //latestTurned = new Map();
     
     height  = new Vector(TILES);
     faction = new Vector(TILES);
@@ -100,6 +122,7 @@ class GameState {
       faction[i] = -1;
       unit[i]    = -1;
       unitFac[i] = -1;
+      star[i]    = (FM.prng.nextMod(100) > 95 ? FM.prng.nextMod(50) + 1 : -1);
       shield[i]  = null;
     }
   }
@@ -142,11 +165,11 @@ class GameState {
     return Json.stringify({
          h: height.toArray()
         ,f: faction.toArray()
-        //,n: name.toArray()
+        ,n: name.toArray()
         ,u: unit.toArray()
         ,uf: unitFac.toArray()
         ,s: stats.toArray()
-        //,sr: star.toArray()
+        ,sr: star.toArray()
         //,sh:
         ,t: ticker.getTime()
         ,p: period
@@ -156,6 +179,8 @@ class GameState {
         ,fs: sl
         ,fg: nrg
         ,fm: maxnrg
+        ,fin: income
+        ,fig: ingest
       });
   }
   
@@ -180,11 +205,11 @@ class GameState {
     var obj = Json.parse(s);
     height  = Vector.fromArrayCopy(obj.h);
     faction = Vector.fromArrayCopy(obj.f);
-    //name    = obj.n
+    name    = obj.n
     unit    = Vector.fromArrayCopy(obj.u);
     unitFac = Vector.fromArrayCopy(obj.uf);
     stats   = Vector.fromArrayCopy(obj.s);
-    //star    = Vector.fromArrayCopy(obj.sr);
+    star    = Vector.fromArrayCopy(obj.sr);
     //shield  = Vector.fromArrayCopy(obj.sh);
     ticker  = Date.fromTime(obj.t);
     period  = obj.p;
@@ -195,6 +220,19 @@ class GameState {
     sl      = obj.fs;
     nrg     = obj.fg;
     maxnrg  = obj.fm;
+    income  = obj.fin;
+    ingest  = obj.fig;
+    
+    for (i in 0...fid.length){
+      if (currentFaction == fid[i]){
+        currentSL = sl[i];
+        currentNRG = nrg[i];
+        maxNRG = maxnrg[i];
+        currentIncome = income[i];
+        currentIngest = ingest[i];
+        break;
+      }
+    }
     
     for (i in 0...TILES){
       turned[i] = MoveStatus.None;
@@ -204,6 +242,7 @@ class GameState {
     }
     
     currentMoves = [];
+    leaders = getLeaders();
   }
   
   public static function decodeTurn(s:String):Void {
@@ -214,7 +253,7 @@ class GameState {
     //latestTurned.set(obj.f, obj.t);
   }
   
-  public static function spawnPlayer(id:Int, pn:String, c:Int):Void {
+  public static function spawnPlayer(id:Int, pn:String, c:Int):Int {
     var t:Int = FM.prng.nextMod(TILES);
     
     fid.push   (id);
@@ -223,6 +262,8 @@ class GameState {
     sl.push    (5);
     nrg.push   (11);
     maxnrg.push(15);
+    income.push(0);
+    ingest.push(0);
     
     faction[t] = id;
     unit   [t] = 0;
@@ -238,6 +279,8 @@ class GameState {
       stats  [a.index] = Unit.UNITS[unit[a.index]].cloneStats();
       i++;
     }
+    
+    return t;
   }
   
   public static function killUnit(t:Int):Void {
@@ -279,6 +322,11 @@ class GameState {
     ]);
   
   public static function turn():Void {
+    for (i in 0...fid.length){
+      income[i] = 0;
+      ingest[i] = 0;
+    }
+    
     var tilesAttacked = [];
     var attacks = currentMoves.filter(function(m) return m.type == Attack);
     while (attacks.length > 0){
@@ -331,26 +379,80 @@ class GameState {
         continue;
       }
       captureLand(cp.from);
+      for (f in 0...fid.length){
+        if (fid[f] == faction[cp.from]){
+          sl[f] -= 1;
+          break;
+        }
+      }
     }
     var builds = currentMoves.filter(function(m) return m.type == Build);
     while (builds.length > 0){
       var bd = builds.splice(FM.prng.nextMod(builds.length), 1)[0];
       buildUnit(bd.from, bd.to);
+      for (f in 0...fid.length){
+        if (fid[f] == faction[bd.from]){
+          sl[f] -= Unit.UNITS[bd.to].costSL;
+          break;
+        }
+      }
     }
-    trace(currentMoves);
     currentMoves = [];
     
+    for (f in 0...fid.length){
+      maxnrg[f] = 0;
+      nrg[f] = 0;
+    }
+
     for (i in 0...TILES){
-      /*
-      if (turned[i] == MoveStatus.Building){
-        stats[i] = Unit.UNITS[unit[i]].cloneStats();
-      }
-      */
+      star[i] = (FM.prng.nextMod(100) > 95 ? FM.prng.nextMod(30) + 20 : -1);
+      
       currentClicks[i] = null;
       turned[i] = MoveStatus.None;
+      
+      if (faction[i] != -1){
+        var facid = -1;
+        for (f in 0...fid.length){
+          if (faction[i] == fid[f]){
+            facid = f;
+            break;
+          }
+        }
+        if (star[i] != -1){
+          sl[facid]++;
+          income[facid]++;
+        }
+        nrg[facid]--;
+      }
       if (unit[i] != -1){
         turned[i] = MoveStatus.Ready;
+        var facid = -1;
+        for (f in 0...fid.length){
+          if (unitFac[i] == fid[f]){
+            facid = f;
+            break;
+          }
+        }
+        switch (unit[i]){
+          case 0:
+          maxnrg[facid] += 15;
+          nrg[facid] += 15;
+          case 1:
+          if (star[i] != -1){
+            sl[facid] += 2;
+            ingest[facid] += 2;
+          }
+          nrg[facid] -= Unit.UNITS[unit[i]].costUNRG;
+          case _:
+          nrg[facid] -= Unit.UNITS[unit[i]].costUNRG;
+        }
       }
+    }
+    
+    if (SINGLE){
+      currentSL = sl[0];
+      currentNRG = nrg[0];
+      maxNRG = maxnrg[0];
     }
   }
 }

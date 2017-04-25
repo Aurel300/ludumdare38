@@ -23,6 +23,7 @@ class Tile {
   public var spriteOY:Float = -1;
   public var selected:Bool = false;
   public var hover:Bool = false;
+  public var starlight:Array<Starlight> = [];
   
   public function new(points:Array<Int>){
     this.points   = points;
@@ -30,3 +31,9 @@ class Tile {
     this.range    = [];
   }
 }
+
+typedef Starlight = {
+     h:Float
+    ,v:Float
+    ,t:Int
+  };

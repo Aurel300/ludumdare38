@@ -88,7 +88,8 @@ class Player {
     //sendOp(2, GameState.encodeTicker());
     if (logged){
       if (!spawned){
-        GameState.spawnPlayer(logId, logName, logColour);
+        var t = GameState.spawnPlayer(logId, logName, logColour);
+        sendOp(0x03, "{t:" + t + "}");
         spawned = true;
       }
       sendMaster();

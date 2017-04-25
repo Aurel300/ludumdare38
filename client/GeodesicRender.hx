@@ -22,6 +22,8 @@ class GeodesicRender {
   private var ptVisible:Int = 0;
   private var stiles:Vector<Tile>; // tiles with sprites
   private var stVisible:Int = 0;
+  private var ltiles:Vector<Tile>; // tiles with starlight
+  private var ltVisible:Int = 0;
   private var lastScale:Float = 1;
   private var facLight:Vector<Int>;
   private var facLightPattern:Vector<Int>;
@@ -39,7 +41,7 @@ class GeodesicRender {
     upoints = new Vector(points.length);
     ptiles = new Vector(tiles.length);
     stiles = new Vector(tiles.length);
-    select = tiles[35];
+    ltiles = new Vector(tiles.length);
     facLight = new Vector(Palette.facPatterns.length);
     facLightPattern = Vector.fromArrayCopy([
         for (i in 0...8) for (j in 0...120){
@@ -106,6 +108,7 @@ class GeodesicRender {
     
     ptVisible = 0;
     var stilesP = [];
+    var ltilesP = [];
     for (t in tiles){
       var area = 0;
       var visible = false;
@@ -141,6 +144,22 @@ class GeodesicRender {
                 + (t.alpha >> 1) * Palette.ALPHA
               );
           });
+        if (GameState.star[ti] != -1){
+          t.spriteX = FM.floor((ppoints[t.points[0]].x + ppoints[t.points[1]].x + ppoints[t.points[2]].x) / 3);
+          t.spriteY = FM.floor((ppoints[t.points[0]].y + ppoints[t.points[1]].y + ppoints[t.points[2]].y) / 3);
+          if (t.starlight.length != GameState.star[ti]){
+            t.starlight = [ for (i in 0...GameState.star[ti])
+                {
+                   h: FM.prng.nextFloat(2)
+                  ,v: FM.prng.nextFloat(.01)
+                  ,t: FM.prng.nextMod(8)
+                }
+              ];
+          }
+          ltilesP.push(t);
+        } else if (t.starlight.length > 0){
+          t.starlight = [];
+        }
         if (GameState.unit[ti] != -1){
           t.spriteX = FM.floor((ppoints[t.points[0]].x + ppoints[t.points[1]].x + ppoints[t.points[2]].x) / 3);
           t.spriteY = FM.floor((ppoints[t.points[0]].y + ppoints[t.points[1]].y + ppoints[t.points[2]].y) / 3);
@@ -158,9 +177,14 @@ class GeodesicRender {
     }
     
     stilesP.sort(zSortTile);
+    ltilesP.sort(zSortTile);
     stVisible = 0;
+    ltVisible = 0;
     for (t in stilesP){
       stiles[stVisible++] = t;
+    }
+    for (t in ltilesP){
+      ltiles[ltVisible++] = t;
     }
   }
   
@@ -302,6 +326,23 @@ class GeodesicRender {
             ,tile.spriteX - 12 - FM.floor(tile.spriteOX * (sel ? 5.5 : 2.5))
             ,tile.spriteY - 12 - FM.floor(tile.spriteOY * (sel ? 5.5 : 2.5))
           );
+      }
+    }
+    
+    for (rti in 0...ltVisible){
+      var tile = ltiles[rti];
+      for (l in tile.starlight){
+        var spr = new Point2DI(tile.spriteX, tile.spriteY);
+        var diff = spr.subtract(CENTER);
+        bmp.blitAlpha(
+             Sprites.starlight[l.t]
+            ,FM.floor(diff.x * l.h) + tile.spriteX
+            ,FM.floor(diff.y * l.h) + tile.spriteY
+          );
+        l.h -= l.v;
+        if (l.h < 0){
+          l.h += 2;
+        }
       }
     }
     

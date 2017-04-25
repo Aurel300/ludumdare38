@@ -3,6 +3,7 @@ import haxe.io.Bytes;
 import sk.thenet.FM;
 import sk.thenet.anim.Timing;
 import sk.thenet.app.*;
+import sk.thenet.bmp.*;
 import sk.thenet.event.*;
 import sk.thenet.geom.*;
 import sk.thenet.net.ws.Websocket;
@@ -16,6 +17,7 @@ class SGame extends State {
   private var gui:GUI;
   private var ws:Websocket;
   private var wsStatus:ServerStatus = None;
+  private var background:Colour;
   
   public function new(app:Application){
     super("game", app);
@@ -29,22 +31,40 @@ class SGame extends State {
   }
   
   override public function to():Void {
+    background = ([
+         Palette.pal[3]
+        ,Palette.pal[6]
+        ,Palette.pal[19]
+        ,Palette.pal[20]
+        ,Palette.pal[22]
+      ])[FM.floor(Math.random() * 5)];
+    
     ico = Geodesic.generateIcosahedron(4);
-    GameState.initEmpty(ico);
-    ws = Platform.createWebsocket();
-    ws.listen("data", handleData);
-    ws.connect("localhost", "/", 7738);
-    var fid = FM.round(Date.now().getTime() * 1327) ^ 0x7FFFFFFF;
-    GameState.selectFaction(fid);
-    sendOp(0x7, Json.stringify({
-         i: fid
-        ,n: "foo"
-        ,p: "bar"
-        ,c: GameState.currentColour
-      }));
-    GameState.encodeTurnSend = function(){
-      sendOp(0x01, GameState.encodeTurn());
-    };
+    if (GameState.SINGLE){
+      GameState.init(ico);
+      ren = new GeodesicRender(ico);
+      zoomIntro = 0;
+      gui = new GUI(app, ico, ren, ws);
+      var fid = FM.round(Date.now().getTime() * 1327) ^ 0x7FFFFFFF;
+      GameState.selectFaction(fid);
+      GameState.spawnPlayer(fid, "name", GameState.currentColour);
+    } else {
+      GameState.initEmpty(ico);
+      ws = Platform.createWebsocket();
+      ws.listen("data", handleData);
+      ws.connect("localhost", "/", 7738);
+      var fid = FM.round(Date.now().getTime() * 1327) ^ 0x7FFFFFFF;
+      GameState.selectFaction(fid);
+      sendOp(0x7, Json.stringify({
+           i: fid
+          ,n: GameState.currentNick
+          ,p: ""
+          ,c: GameState.currentColour
+        }));
+      GameState.encodeTurnSend = function(){
+        sendOp(0x01, GameState.encodeTurn());
+      };
+    }
   }
   
   private function handleData(ev:EData):Bool {
@@ -59,13 +79,14 @@ class SGame extends State {
         wsStatus = MasterRecv;
       } else {
         ren.rotate(gui.camera);
+        gui.reset();
       }
       
       case 0x02:
       GameState.decodeTicker(ev.data.getString(1, ev.data.length - 1));
       
       case 0x03:
-      
+      gui.spawn();
       
       case _:
       trace("unknown packet");
@@ -74,9 +95,14 @@ class SGame extends State {
   }
   
   override public function tick():Void { 
-    app.bitmap.fill(Palette.pal[3]);
+    app.bitmap.fill(background);
     
-    if (wsStatus != MasterRecv){
+    GUI.fontText.render(
+         app.bitmap, Main.WIDTH - 100, 10
+        ,"Leaderboard:\n" + GameState.leaders.join("\n")
+      );
+    
+    if (!GameState.SINGLE && wsStatus != MasterRecv){
       GUI.fontText.render(
            app.bitmap, 10, 10
           ,ws.connected ? "Downloading data ..." : "Connecting ..."

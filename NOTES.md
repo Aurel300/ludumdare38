@@ -78,7 +78,7 @@ Column is attacker, line is defender.
 ## Sound fx list ##
 
  - [x] GUI drawer
- - [ ] GUI click (mechanical pen click?)
+ - [x] GUI click (mechanical pen click?)
  - unit select:
    - [x] generator
    - [x] SL catcher
@@ -96,7 +96,7 @@ Column is attacker, line is defender.
    - [x] cloak and dagger
  - [x] low time
  - [x] unit movement (like in Civ 2)
- - [ ] land captured
+ - [x] land captured
  - [x] SL collected (coin sounds?)
  - [x] SL caught from sky
  - [x] new player spawn = meteorite crash
@@ -104,30 +104,27 @@ Column is attacker, line is defender.
 
 ## Features / TODO ##
 
- - [ ] gameplay system
+ - [x] gameplay system
    - [x] design
    - [x] moving
    - [x] attacking - range?
    - [x] building
-   - [ ] resources
- - [ ] realtime multiplayer
+   - [x] resources
+ - [ ] **music**
+ - [x] realtime multiplayer
    - [x] "logins" / sessions
-   - [.] gamestate
+   - [x] gamestate
      - [x] push turns
      - [x] resolve turns
-     - [ ] animate turns back
-   - [ ] events
-   - [ ] karma
  - [.] visuals
    - [x] canvas
    - [x] tile grid
    - [.] GUI
    - [x] sprites + deformation
-   - [ ] towers
    - [.] interaction
      - [x] selection
      - [.] rotation (rotate to tile automatically)
-     - [ ] zoom
+     - [ ] **zoom**
    - [ ] better shading
    - [ ] space
    - [x] terrain

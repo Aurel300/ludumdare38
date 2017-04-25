@@ -13,6 +13,7 @@ class Sprites {
   public static var amasks:Vector<Bitmap>;
   public static var amasksManip:Vector<AlphaMask>;
   public static var moveds:Vector<Bitmap>;
+  public static var starlight:Vector<Bitmap>;
   
   public static function init(am:AssetManager, _):Bool {
     amasks = new Vector<Bitmap>(8);
@@ -58,6 +59,11 @@ class Sprites {
     moveds = new Vector<Bitmap>(4);
     for (i in 0...moveds.length){
       moveds[i] = am.getBitmap("game").fluent >> (new Cut(216 + i * 24, 80, 24, 24));
+    }
+    
+    starlight = new Vector(8);
+    for (i in 0...8){
+      starlight[i] = am.getBitmap("game").fluent >> (new Cut(216 + i * 8, 104, 8, 8));
     }
     
     return false;
