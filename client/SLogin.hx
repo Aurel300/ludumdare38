@@ -100,7 +100,6 @@ class SLogin extends State {
   override public function mouseClick(_, _):Void {
     if (sel != -1){
       GameState.selectNative(sel);
-      GameState.currentNick = nick;
       msel = sel;
     }
     if (bd
@@ -108,6 +107,7 @@ class SLogin extends State {
         && Platform.mouse.x < Main.WIDTH - 10
         && Platform.mouse.y >= Main.HEIGHT - 16 - 10
         && Platform.mouse.y < Main.HEIGHT - 10){
+      GameState.currentNick = nick;
       app.applyState(app.getStateById("game"));
     }
   }

@@ -5,7 +5,7 @@ import haxe.ds.Vector;
 import sk.thenet.FM;
 
 class GameState {
-  public static inline var SINGLE:Bool = false;
+  public static inline var SINGLE:Bool = true;
   public static inline var TILES:Int = 320;
   
   // clients
@@ -165,7 +165,6 @@ class GameState {
     return Json.stringify({
          h: height.toArray()
         ,f: faction.toArray()
-        ,n: name.toArray()
         ,u: unit.toArray()
         ,uf: unitFac.toArray()
         ,s: stats.toArray()
@@ -205,7 +204,6 @@ class GameState {
     var obj = Json.parse(s);
     height  = Vector.fromArrayCopy(obj.h);
     faction = Vector.fromArrayCopy(obj.f);
-    name    = obj.n
     unit    = Vector.fromArrayCopy(obj.u);
     unitFac = Vector.fromArrayCopy(obj.uf);
     stats   = Vector.fromArrayCopy(obj.s);

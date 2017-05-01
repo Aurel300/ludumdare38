@@ -55,7 +55,7 @@ class Main extends Application {
         ,Mouse
       ]);
     
-    preloader = new TNPreloader(this, "login", true);
+    preloader = new TNPreloader(this, "login", false);
     addState(new SLogin(this));
     addState(new SGame(this));
     mainLoop();

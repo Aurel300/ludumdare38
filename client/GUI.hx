@@ -192,7 +192,7 @@ class GUI {
       var moon = Platform.createBitmap(32, 24, 0);
       sun.blitAlphaRect(game, 0, 0, 176, 32, 32, 24);
       moon.blitAlphaRect(game, 0, 0, 176 + 32, 32, 32, 24);
-    
+      
       guiTimer = new Vector(16);
       for (i in 0...16){
         guiTimer[i] = Platform.createBitmap(32, 24, 0);
@@ -206,10 +206,11 @@ class GUI {
           continue;
         }
         for (y in 2...22){
-          guiTimer[i].blitAlphaRect(
-               moon, 6, y, 6, y
-              ,10 - FM.round(Math.cos((i / 16) * Math.PI) * Math.sin((y / 22) * Math.PI) * 10), 1
-            );
+          var w = 10 - FM.round(Math.cos((i / 16) * Math.PI) * Math.sin((y / 22) * Math.PI) * 10);
+          if (w <= 0){
+            continue;
+          }
+          guiTimer[i].blitAlphaRect(moon, 6, y, 6, y, w, 1);
         }
       }
     };
@@ -723,7 +724,7 @@ class GUI {
         true;
         
         case ToggleDrawer:
-        app.assetManager.getSound("gui_drawer").play();
+        app.assetManager.getSound("gui_drawer_open").play();
         drawerTarget = DRAWER_MAX - drawerTarget;
         true;
         
